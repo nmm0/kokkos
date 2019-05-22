@@ -54,6 +54,7 @@
 #include <Kokkos_HostSpace.hpp>
 #include <Kokkos_MemoryTraits.hpp>
 #include <Kokkos_ExecPolicy.hpp>
+#include <Kokkos_ViewHooks.hpp>
 
 #if defined(KOKKOS_ENABLE_PROFILING)
 #include <impl/Kokkos_Profiling_Interface.hpp>
@@ -1815,7 +1816,13 @@ class View : public ViewTraits<DataType, Properties...> {
 
   KOKKOS_INLINE_FUNCTION
   View(const View& rhs)
-      : m_track(rhs.m_track, traits::is_managed), m_map(rhs.m_map) {}
+      : m_track(rhs.m_track, traits::is_managed), m_map(rhs.m_map)
+  {
+#if defined( KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST )
+      if ( ViewHooks::is_set() )
+        ViewHooks::call( *this );
+#endif
+  }
 
   KOKKOS_INLINE_FUNCTION
   View(View&& rhs)
