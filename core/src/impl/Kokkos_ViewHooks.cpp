@@ -47,5 +47,6 @@
 namespace Kokkos
 {
   ViewHooks::callback_type ViewHooks::s_callback;
+  ViewHooks::const_callback_type ViewHooks::s_const_callback;
 }
 #endif

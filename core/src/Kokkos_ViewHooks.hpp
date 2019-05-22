@@ -50,86 +50,128 @@
 
 #include <functional>
 #include <memory>
+#include <type_traits>
 
 namespace Kokkos
 {
   template< class DataType, class ... Properties >
   class View;
   
-  class ViewHolderBase
+  class ConstViewHolderBase
   {
   public:
     
-    std::unique_ptr< ViewHolderBase > clone() const
-    {
-      return std::unique_ptr< ViewHolderBase >( clone_impl() );
-    }
-  
     virtual size_t span() const = 0;
     virtual bool span_is_contiguous() const = 0;
     virtual const void *data() const = 0;
-    virtual void *data() = 0;
+  
+    virtual ConstViewHolderBase *clone() const = 0;
     
   private:
-    
-    virtual ViewHolderBase *clone_impl() const = 0;
   };
   
-  template< class DataType, class ... Properties >
+  class ViewHolderBase : public ConstViewHolderBase
+  {
+  public:
+    
+    virtual void *data() = 0;
+    virtual ViewHolderBase *clone() const = 0;
+  };
+  
+  template< typename View, typename Enable = void >
   class ViewHolder : public ViewHolderBase
   {
   public:
     
-    explicit ViewHolder( View< DataType, Properties... > &view )
+    explicit ViewHolder( View &view )
       : m_view( &view )
     {}
     
-    size_t span() const override { return m_view->span() * sizeof( DataType ); }
+    size_t span() const override { return m_view->span() * sizeof( typename View::value_type ); }
     bool span_is_contiguous() const override { return m_view->span_is_contiguous(); }
     const void *data() const override { return m_view->data(); };
     void *data() override { return m_view->data(); };
   
-  private:
-    
-    ViewHolderBase *clone_impl() const override
+    ViewHolder *clone() const override
     {
       return new ViewHolder( *this );
     }
+  
+  private:
     
-    View< DataType, Properties... > *m_view;
+    View *m_view;
+  };
+  
+  template< class View >
+  class ViewHolder< View, typename std::enable_if< std::is_const< typename View::value_type >::value >::type > : public ConstViewHolderBase
+  {
+  public:
+    
+    explicit ViewHolder( View &view )
+      : m_view( &view )
+    {}
+    
+    size_t span() const override { return m_view->span() * sizeof( typename View::value_type ); }
+    bool span_is_contiguous() const override { return m_view->span_is_contiguous(); }
+    const void *data() const override { return m_view->data(); };
+  
+    ViewHolder *clone() const override
+    {
+      return new ViewHolder( *this );
+    }
+  
+  private:
+    
+    View *m_view;
   };
   
   struct ViewHooks
   {
     using callback_type = std::function< void( ViewHolderBase & ) >;
+    using const_callback_type = std::function< void( ConstViewHolderBase & ) >;
     
-    template< typename F >
-    static void set( F &&fun )
+    template< typename F, typename ConstF >
+    static void set( F &&fun, ConstF &&const_fun )
     {
       s_callback = std::forward< F >( fun );
+      s_const_callback = std::forward< ConstF >( const_fun );
     }
     
     static void clear()
     {
       s_callback = callback_type{};
+      s_const_callback = const_callback_type{};
     }
     
     static bool is_set() noexcept
     {
-      return static_cast< bool >( s_callback );
+      return static_cast< bool >( s_callback ) || static_cast< bool >( s_const_callback );
     }
     
     template< class DataType, class ... Properties >
     static void call( View< DataType, Properties... > &view )
     {
-      auto holder = ViewHolder< DataType, Properties... >( view );
+      auto holder = ViewHolder< View< DataType, Properties... > >( view );
       
-      s_callback( holder );
+      do_call( holder );
     }
     
   private:
     
+    static void do_call( ViewHolderBase &view )
+    {
+      if ( s_callback )
+        s_callback( view );
+    }
+  
+    static void do_call( ConstViewHolderBase &view )
+    {
+      if ( s_const_callback )
+        s_const_callback( view );
+    }
+    
     static callback_type s_callback;
+    static const_callback_type s_const_callback;
   };
 
 }
