@@ -64,8 +64,10 @@ namespace Kokkos
     virtual size_t span() const = 0;
     virtual bool span_is_contiguous() const = 0;
     virtual const void *data() const = 0;
+    virtual std::string label() const noexcept =0;
   
     virtual ConstViewHolderBase *clone() const = 0;
+    virtual size_t data_type_size() const = 0;
     
   private:
   };
@@ -87,7 +89,7 @@ namespace Kokkos
       : m_view( &view )
     {}
     
-    size_t span() const override { return m_view->span() * sizeof( typename View::value_type ); }
+    size_t span() const override { return m_view->span(); }
     bool span_is_contiguous() const override { return m_view->span_is_contiguous(); }
     const void *data() const override { return m_view->data(); };
     void *data() override { return m_view->data(); };
@@ -96,6 +98,9 @@ namespace Kokkos
     {
       return new ViewHolder( *this );
     }
+    
+    std::string label() const noexcept override { return m_view->label(); }
+    size_t data_type_size() const noexcept override { return sizeof( typename View::value_type ); }
   
   private:
     
@@ -111,15 +116,18 @@ namespace Kokkos
       : m_view( &view )
     {}
     
-    size_t span() const override { return m_view->span() * sizeof( typename View::value_type ); }
+    size_t span() const override { return m_view->span(); }
     bool span_is_contiguous() const override { return m_view->span_is_contiguous(); }
     const void *data() const override { return m_view->data(); };
+    size_t data_type_size() const noexcept override { return sizeof( typename View::value_type ); }
   
     ViewHolder *clone() const override
     {
       return new ViewHolder( *this );
     }
   
+    std::string label() const noexcept override { return m_view->label(); }
+    
   private:
     
     View *m_view;
