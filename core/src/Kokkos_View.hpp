@@ -1818,9 +1818,8 @@ class View : public ViewTraits<DataType, Properties...> {
   View(const View& rhs)
       : m_track(rhs.m_track, traits::is_managed), m_map(rhs.m_map)
   {
-#if defined( KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST )
-      if ( ViewHooks::is_set() )
-        ViewHooks::call( *this );
+#ifdef KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST
+    Impl::ViewHooksCaller< View >::call( *this );
 #endif
   }
 

@@ -45,6 +45,8 @@
 #define KOKKOS_VIEWHOOKS_HPP
 
 #include <Kokkos_Macros.hpp>
+#include <Kokkos_HostSpace.hpp>
+#include <Kokkos_Layout.hpp>
 
 #if defined( KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST )
 
@@ -57,6 +59,49 @@ namespace Kokkos
   template< class DataType, class ... Properties >
   class View;
   
+  template< class DataType , class ... Properties >
+  struct ViewTraits;
+  
+  namespace Impl
+  {
+    template< class DataType, class... Properties >
+    View< typename ViewTraits< DataType, Properties... >::non_const_data_type,
+          typename std::conditional< std::is_same< LayoutLeft, typename ViewTraits< DataType, Properties... >::array_layout >::value,
+                              LayoutLeft, LayoutRight >::type, HostSpace, MemoryTraits< Unmanaged > >
+      make_unmanaged_view_like( View< DataType, Properties... > view, unsigned char *buff )
+    {
+      using traits_type = ViewTraits< DataType, Properties... >;
+      using new_data_type = typename traits_type::non_const_data_type;
+      
+      // Use a contiguous layout type. Keep layout left if it already is, otherwise use layout right
+      using layout_type = typename std::conditional< std::is_same< LayoutLeft, typename traits_type::array_layout >::value,
+        LayoutLeft, LayoutRight >::type;
+      
+      using new_view_type = View< new_data_type, layout_type, HostSpace, MemoryTraits< Unmanaged > >;
+  
+      return new_view_type( reinterpret_cast< typename new_view_type::pointer_type >( buff )
+#ifdef KOKKOS_ENABLE_DEPRECATED_CODE
+      , src.extent(0)
+                   , src.extent(1)
+                   , src.extent(2)
+                   , src.extent(3)
+                   , src.extent(4)
+                   , src.extent(5)
+                   , src.extent(6)
+                   , src.extent(7) );
+#else
+        , view.rank_dynamic > 0 ? view.extent(0): KOKKOS_IMPL_CTOR_DEFAULT_ARG
+        , view.rank_dynamic > 1 ? view.extent(1): KOKKOS_IMPL_CTOR_DEFAULT_ARG
+        , view.rank_dynamic > 2 ? view.extent(2): KOKKOS_IMPL_CTOR_DEFAULT_ARG
+        , view.rank_dynamic > 3 ? view.extent(3): KOKKOS_IMPL_CTOR_DEFAULT_ARG
+        , view.rank_dynamic > 4 ? view.extent(4): KOKKOS_IMPL_CTOR_DEFAULT_ARG
+        , view.rank_dynamic > 5 ? view.extent(5): KOKKOS_IMPL_CTOR_DEFAULT_ARG
+        , view.rank_dynamic > 6 ? view.extent(6): KOKKOS_IMPL_CTOR_DEFAULT_ARG
+        , view.rank_dynamic > 7 ? view.extent(7): KOKKOS_IMPL_CTOR_DEFAULT_ARG );
+#endif
+    }
+  }
+  
   class ConstViewHolderBase
   {
   public:
@@ -68,6 +113,11 @@ namespace Kokkos
   
     virtual ConstViewHolderBase *clone() const = 0;
     virtual size_t data_type_size() const = 0;
+    
+    virtual bool is_hostspace() const noexcept = 0;
+    
+    virtual void deep_copy_to_buffer( unsigned char *buff ) = 0;
+    virtual void deep_copy_from_buffer( unsigned char *buff ) = 0;
     
   private:
   };
@@ -102,6 +152,20 @@ namespace Kokkos
     std::string label() const noexcept override { return m_view->label(); }
     size_t data_type_size() const noexcept override { return sizeof( typename View::value_type ); }
   
+    bool is_hostspace() const noexcept override { return std::is_same< typename View::memory_space , HostSpace >::value; }
+  
+    void deep_copy_to_buffer( unsigned char *buff ) override
+    {
+      auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
+      deep_copy( unmanaged, *m_view );
+    }
+  
+    void deep_copy_from_buffer( unsigned char *buff ) override
+    {
+      auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
+      deep_copy( *m_view, unmanaged );
+    }
+  
   private:
     
     View *m_view;
@@ -121,12 +185,26 @@ namespace Kokkos
     const void *data() const override { return m_view->data(); };
     size_t data_type_size() const noexcept override { return sizeof( typename View::value_type ); }
   
+    bool is_hostspace() const noexcept override { return std::is_same< typename View::memory_space , HostSpace >::value; }
+  
     ViewHolder *clone() const override
     {
       return new ViewHolder( *this );
     }
   
     std::string label() const noexcept override { return m_view->label(); }
+  
+    void deep_copy_to_buffer( unsigned char *buff ) override
+    {
+      auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
+      deep_copy( unmanaged, *m_view );
+    }
+  
+    void deep_copy_from_buffer( unsigned char *buff ) override
+    {
+      auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
+      deep_copy( *m_view, unmanaged );
+    }
     
   private:
     
@@ -181,6 +259,28 @@ namespace Kokkos
     static callback_type s_callback;
     static const_callback_type s_const_callback;
   };
+  
+  
+  
+  namespace Impl
+  {
+    template< class ViewType, class Traits = typename ViewType::traits, class Enabled = void >
+    struct ViewHooksCaller
+    {
+      static void call( ViewType &view )
+      {}
+    };
+    
+    template< class ViewType, class Traits >
+    struct ViewHooksCaller< ViewType, Traits, typename std::enable_if< !std::is_same< typename Traits::memory_space, AnonymousSpace >::value >::type >
+    {
+      static void call( ViewType &view )
+      {
+        if ( ViewHooks::is_set() )
+          ViewHooks::call( view );
+      }
+    };
+  }
 
 }
 
