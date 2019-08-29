@@ -80,16 +80,6 @@ namespace Kokkos
       using new_view_type = View< new_data_type, layout_type, HostSpace, MemoryTraits< Unmanaged > >;
   
       return new_view_type( reinterpret_cast< typename new_view_type::pointer_type >( buff )
-#ifdef KOKKOS_ENABLE_DEPRECATED_CODE
-      , src.extent(0)
-                   , src.extent(1)
-                   , src.extent(2)
-                   , src.extent(3)
-                   , src.extent(4)
-                   , src.extent(5)
-                   , src.extent(6)
-                   , src.extent(7) );
-#else
         , view.rank_dynamic > 0 ? view.extent(0): KOKKOS_IMPL_CTOR_DEFAULT_ARG
         , view.rank_dynamic > 1 ? view.extent(1): KOKKOS_IMPL_CTOR_DEFAULT_ARG
         , view.rank_dynamic > 2 ? view.extent(2): KOKKOS_IMPL_CTOR_DEFAULT_ARG
@@ -98,7 +88,6 @@ namespace Kokkos
         , view.rank_dynamic > 5 ? view.extent(5): KOKKOS_IMPL_CTOR_DEFAULT_ARG
         , view.rank_dynamic > 6 ? view.extent(6): KOKKOS_IMPL_CTOR_DEFAULT_ARG
         , view.rank_dynamic > 7 ? view.extent(7): KOKKOS_IMPL_CTOR_DEFAULT_ARG );
-#endif
     }
   }
   
@@ -117,7 +106,6 @@ namespace Kokkos
     virtual bool is_hostspace() const noexcept = 0;
     
     virtual void deep_copy_to_buffer( unsigned char *buff ) = 0;
-    virtual void deep_copy_from_buffer( unsigned char *buff ) = 0;
     
   private:
   };
@@ -128,6 +116,7 @@ namespace Kokkos
     
     virtual void *data() = 0;
     virtual ViewHolderBase *clone() const = 0;
+    virtual void deep_copy_from_buffer( unsigned char *buff ) = 0;
   };
   
   template< typename View, typename Enable = void >
@@ -198,12 +187,6 @@ namespace Kokkos
     {
       auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
       deep_copy( unmanaged, *m_view );
-    }
-  
-    void deep_copy_from_buffer( unsigned char *buff ) override
-    {
-      auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
-      deep_copy( *m_view, unmanaged );
     }
     
   private:
