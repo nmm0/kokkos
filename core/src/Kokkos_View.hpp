@@ -1820,6 +1820,34 @@ class View : public ViewTraits<DataType, Properties...> {
     return m_track.template get_label<typename traits::memory_space>();
   }
 
+  inline bool verify_data() const {
+    typedef Kokkos::Impl::ViewValueFunctor<typename traits::execution_space,
+                                           typename traits::value_type>
+        functor_type;
+    typedef Kokkos::Impl::SharedAllocationRecord<typename traits::memory_space,
+                                                 functor_type>
+        record_type;
+
+    record_type* rec = static_cast<record_type*>(
+        m_track.template get_record<typename traits::memory_space>());
+
+    // result needs to be in the same memoryspace as the buffers
+    typename traits::memory_space spc;
+    int* result = (int*)spc.allocate(sizeof(int));
+    rec->m_destroy.verify_buffer_regions(result);
+
+    Kokkos::HostSpace hsp;
+    int* hResult = (int*)hsp.allocate(sizeof(int));
+    if (std::is_same<typename traits::memory_space, Kokkos::HostSpace>::value) {
+      *hResult = *result;
+    } else {
+      Kokkos::Impl::DeepCopy<Kokkos::HostSpace, typename traits::memory_space>(
+          hResult, result, sizeof(int));
+    }
+
+    // need a way to get the result from the device
+    return (hResult == 0);
+  }
   //----------------------------------------
   // Allocation according to allocation properties and array layout
 

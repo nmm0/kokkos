@@ -708,7 +708,8 @@ class SharedAllocationRecord<Kokkos::CudaSpace, void>
   SharedAllocationRecord(
       const Kokkos::CudaSpace& arg_space, const std::string& arg_label,
       const size_t arg_alloc_size,
-      const RecordBase::function_type arg_dealloc = &deallocate);
+      const RecordBase::function_type arg_dealloc = &deallocate,
+      bool bDebug                                 = false);
 
  public:
   std::string get_label() const;
@@ -781,7 +782,8 @@ class SharedAllocationRecord<Kokkos::CudaUVMSpace, void>
   SharedAllocationRecord(
       const Kokkos::CudaUVMSpace& arg_space, const std::string& arg_label,
       const size_t arg_alloc_size,
-      const RecordBase::function_type arg_dealloc = &deallocate);
+      const RecordBase::function_type arg_dealloc = &deallocate,
+      bool bDebug                                 = false);
 
  public:
   std::string get_label() const;
@@ -854,7 +856,8 @@ class SharedAllocationRecord<Kokkos::CudaHostPinnedSpace, void>
   SharedAllocationRecord(
       const Kokkos::CudaHostPinnedSpace& arg_space,
       const std::string& arg_label, const size_t arg_alloc_size,
-      const RecordBase::function_type arg_dealloc = &deallocate);
+      const RecordBase::function_type arg_dealloc = &deallocate,
+      bool bDebug                                 = false);
 
  public:
   std::string get_label() const;

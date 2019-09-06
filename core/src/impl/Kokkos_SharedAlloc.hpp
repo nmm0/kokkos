@@ -98,6 +98,7 @@ class SharedAllocationRecord<void, void> {
   SharedAllocationRecord* m_next;
 #endif
   int m_count;
+  bool m_Debug;
 
   SharedAllocationRecord(SharedAllocationRecord&&)      = delete;
   SharedAllocationRecord(const SharedAllocationRecord&) = delete;
@@ -112,7 +113,7 @@ class SharedAllocationRecord<void, void> {
       SharedAllocationRecord* arg_root,
 #endif
       SharedAllocationHeader* arg_alloc_ptr, size_t arg_alloc_size,
-      function_type arg_dealloc);
+      function_type arg_dealloc, bool bDebug = false);
  private:
   static __thread int t_tracking_enabled;
 
@@ -144,7 +145,8 @@ class SharedAllocationRecord<void, void> {
         m_next(this)
 #endif
         ,
-        m_count(0) {
+        m_count(0),
+        m_Debug(false) {
   }
 
   static constexpr unsigned maximum_label_length =
@@ -155,10 +157,30 @@ class SharedAllocationRecord<void, void> {
 
   /* User's memory begins at the end of the header */
   KOKKOS_INLINE_FUNCTION
-  void* data() const { return reinterpret_cast<void*>(m_alloc_ptr + 1); }
+  void* data() const {
+    if (m_Debug) {
+      return reinterpret_cast<void*>(
+          (reinterpret_cast<char*>(m_alloc_ptr + 1)) + size());
+    } else {
+      return reinterpret_cast<void*>(m_alloc_ptr + 1);
+    }
+  }
+
+  static size_t request_alloc_size(size_t sz_, bool bDebug) {
+    if (bDebug)
+      return sz_ * 3 + sizeof(SharedAllocationHeader);
+    else
+      return sz_ + sizeof(SharedAllocationHeader);
+  }
 
   /* User's memory begins at the end of the header */
-  size_t size() const { return m_alloc_size - sizeof(SharedAllocationHeader); }
+  KOKKOS_INLINE_FUNCTION
+  size_t size() const {
+    if (m_Debug)
+      return (m_alloc_size - sizeof(SharedAllocationHeader)) / 3;
+    else
+      return m_alloc_size - sizeof(SharedAllocationHeader);
+  }
 
   /* Cannot be 'constexpr' because 'm_count' is volatile */
   int use_count() const { return *static_cast<const volatile int*>(&m_count); }
@@ -202,6 +224,18 @@ void deallocate(SharedAllocationRecord<void, void>* record_ptr) {
   delete ptr;
 }
 
+/* Taking the address of this function so make sure it is unique */
+template <class MemorySpace, class DestroyFunctor>
+void verify_memory(SharedAllocationRecord<void, void>* record_ptr) {
+  typedef SharedAllocationRecord<MemorySpace, void> base_type;
+  typedef SharedAllocationRecord<MemorySpace, DestroyFunctor> this_type;
+
+  this_type* const ptr =
+      static_cast<this_type*>(static_cast<base_type*>(record_ptr));
+
+  ptr->m_destroy.verify_buffer_regions();
+}
+
 }  // namespace
 
 /*
@@ -221,11 +255,12 @@ class SharedAllocationRecord
     : public SharedAllocationRecord<MemorySpace, void> {
  private:
   SharedAllocationRecord(const MemorySpace& arg_space,
-                         const std::string& arg_label, const size_t arg_alloc)
+                         const std::string& arg_label, const size_t arg_alloc,
+                         bool bDebug = false)
       /*  Allocate user memory as [ SharedAllocationHeader , user_memory ] */
       : SharedAllocationRecord<MemorySpace, void>(
             arg_space, arg_label, arg_alloc,
-            &Kokkos::Impl::deallocate<MemorySpace, DestroyFunctor>),
+            &Kokkos::Impl::deallocate<MemorySpace, DestroyFunctor>, bDebug),
         m_destroy() {}
 
   SharedAllocationRecord()                              = delete;
@@ -240,9 +275,9 @@ class SharedAllocationRecord
   // one to zero removes from the trakcing list and deallocates.
   KOKKOS_INLINE_FUNCTION static SharedAllocationRecord* allocate(
       const MemorySpace& arg_space, const std::string& arg_label,
-      const size_t arg_alloc) {
+      const size_t arg_alloc, bool bDebug = false) {
 #if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
-    return new SharedAllocationRecord(arg_space, arg_label, arg_alloc);
+    return new SharedAllocationRecord(arg_space, arg_label, arg_alloc, bDebug);
 #else
     return (SharedAllocationRecord*)0;
 #endif

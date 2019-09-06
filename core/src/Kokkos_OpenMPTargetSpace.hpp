@@ -166,7 +166,8 @@ class SharedAllocationRecord<Kokkos::Experimental::OpenMPTargetSpace, void>
   SharedAllocationRecord(
       const Kokkos::Experimental::OpenMPTargetSpace& arg_space,
       const std::string& arg_label, const size_t arg_alloc_size,
-      const RecordBase::function_type arg_dealloc = &deallocate);
+      const RecordBase::function_type arg_dealloc = &deallocate,
+      bool bDebug                                 = false);
 
  public:
   std::string get_label() const;

@@ -403,16 +403,17 @@ SharedAllocationRecord<Kokkos::CudaHostPinnedSpace,
 SharedAllocationRecord<Kokkos::CudaSpace, void>::SharedAllocationRecord(
     const Kokkos::CudaSpace &arg_space, const std::string &arg_label,
     const size_t arg_alloc_size,
-    const SharedAllocationRecord<void, void>::function_type arg_dealloc)
+    const SharedAllocationRecord<void, void>::function_type arg_dealloc,
+    bool bDebug)
     // Pass through allocated [ SharedAllocationHeader , user_memory ]
     // Pass through deallocation function
     : SharedAllocationRecord<void, void>(
 #ifdef KOKKOS_DEBUG
           &SharedAllocationRecord<Kokkos::CudaSpace, void>::s_root_record,
 #endif
-          reinterpret_cast<SharedAllocationHeader *>(arg_space.allocate(
-              sizeof(SharedAllocationHeader) + arg_alloc_size)),
-          sizeof(SharedAllocationHeader) + arg_alloc_size, arg_dealloc),
+          reinterpret_cast<SharedAllocationHeader *>(
+              arg_space.allocate(request_alloc_size(arg_alloc_size, bDebug))),
+          request_alloc_size(arg_alloc_size, bDebug), arg_dealloc, bDebug),
       m_tex_obj(0),
       m_space(arg_space) {
 #if defined(KOKKOS_ENABLE_PROFILING)
@@ -441,16 +442,17 @@ SharedAllocationRecord<Kokkos::CudaSpace, void>::SharedAllocationRecord(
 SharedAllocationRecord<Kokkos::CudaUVMSpace, void>::SharedAllocationRecord(
     const Kokkos::CudaUVMSpace &arg_space, const std::string &arg_label,
     const size_t arg_alloc_size,
-    const SharedAllocationRecord<void, void>::function_type arg_dealloc)
+    const SharedAllocationRecord<void, void>::function_type arg_dealloc,
+    bool bDebug)
     // Pass through allocated [ SharedAllocationHeader , user_memory ]
     // Pass through deallocation function
     : SharedAllocationRecord<void, void>(
 #ifdef KOKKOS_DEBUG
           &SharedAllocationRecord<Kokkos::CudaUVMSpace, void>::s_root_record,
 #endif
-          reinterpret_cast<SharedAllocationHeader *>(arg_space.allocate(
-              sizeof(SharedAllocationHeader) + arg_alloc_size)),
-          sizeof(SharedAllocationHeader) + arg_alloc_size, arg_dealloc),
+          reinterpret_cast<SharedAllocationHeader *>(
+              arg_space.allocate(request_alloc_size(arg_alloc_size, bDebug))),
+          request_alloc_size(arg_alloc_size, bDebug), arg_dealloc, bDebug),
       m_tex_obj(0),
       m_space(arg_space) {
 #if defined(KOKKOS_ENABLE_PROFILING)
@@ -476,7 +478,8 @@ SharedAllocationRecord<Kokkos::CudaHostPinnedSpace, void>::
     SharedAllocationRecord(
         const Kokkos::CudaHostPinnedSpace &arg_space,
         const std::string &arg_label, const size_t arg_alloc_size,
-        const SharedAllocationRecord<void, void>::function_type arg_dealloc)
+        const SharedAllocationRecord<void, void>::function_type arg_dealloc,
+        bool bDebug)
     // Pass through allocated [ SharedAllocationHeader , user_memory ]
     // Pass through deallocation function
     : SharedAllocationRecord<void, void>(
@@ -484,9 +487,9 @@ SharedAllocationRecord<Kokkos::CudaHostPinnedSpace, void>::
           &SharedAllocationRecord<Kokkos::CudaHostPinnedSpace,
                                   void>::s_root_record,
 #endif
-          reinterpret_cast<SharedAllocationHeader *>(arg_space.allocate(
-              sizeof(SharedAllocationHeader) + arg_alloc_size)),
-          sizeof(SharedAllocationHeader) + arg_alloc_size, arg_dealloc),
+          reinterpret_cast<SharedAllocationHeader *>(
+              arg_space.allocate(request_alloc_size(arg_alloc_size, bDebug))),
+          request_alloc_size(arg_alloc_size, bDebug), arg_dealloc, bDebug),
       m_space(arg_space) {
 #if defined(KOKKOS_ENABLE_PROFILING)
   if (Kokkos::Profiling::profileLibraryLoaded()) {
