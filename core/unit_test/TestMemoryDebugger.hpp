@@ -79,8 +79,8 @@ struct TestMemoryDebugger {
           if (run_out_of_bounds) {
             T* tA = A.data();
             T* tB = B.data();
-            tA = (tA - 5);
-            *tA = (T)10.5;
+            tA    = (tA - 5);
+            *tA   = (T)10.5;
             for (int r = 0; r < (local_N + 5); r++) {
               tB++;
             }

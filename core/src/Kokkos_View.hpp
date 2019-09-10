@@ -1720,8 +1720,7 @@ class View : public ViewTraits<DataType, Properties...> {
   // Standard destructor, constructors, and assignment operators
 
   KOKKOS_INLINE_FUNCTION
-  ~View() {
-  }
+  ~View() {}
 
   KOKKOS_INLINE_FUNCTION
   View() : m_track(), m_map() {}
@@ -1836,8 +1835,8 @@ class View : public ViewTraits<DataType, Properties...> {
     typename traits::memory_space spc;
     Kokkos::HostSpace hsp;
     int* hResult = (int*)hsp.allocate(sizeof(int));
-    *hResult = 0;
-    int* result = (int*)spc.allocate(sizeof(int));
+    *hResult     = 0;
+    int* result  = (int*)spc.allocate(sizeof(int));
     if (std::is_same<typename traits::memory_space, Kokkos::HostSpace>::value) {
       *result = *hResult;
     } else {
@@ -1855,9 +1854,9 @@ class View : public ViewTraits<DataType, Properties...> {
     }
 
     if (*hResult == 0)
-       return true;
-    else 
-       return false;
+      return true;
+    else
+      return false;
   }
   //----------------------------------------
   // Allocation according to allocation properties and array layout
