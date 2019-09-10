@@ -73,6 +73,7 @@ KOKKOS_INTERNAL_CUDA_USE_RELOC := $(call kokkos_has_string,$(KOKKOS_CUDA_OPTIONS
 KOKKOS_INTERNAL_CUDA_USE_LAMBDA := $(call kokkos_has_string,$(KOKKOS_CUDA_OPTIONS),enable_lambda)
 KOKKOS_INTERNAL_HPX_ENABLE_ASYNC_DISPATCH := $(call kokkos_has_string,$(KOKKOS_HPX_OPTIONS),enable_async_dispatch)
 KOKKOS_INTERNAL_ENABLE_ETI := $(call kokkos_has_string,$(KOKKOS_OPTIONS),enable_eti)
+KOKKOS_INTERNAL_ENABLE_MEMORY_DEBUGGER := $(call kokkos_has_string,$(KOKKOS_OPTIONS),enable_memory_debugger)
 
 
 # Check for Kokkos Host Execution Spaces one of which must be on.
@@ -598,6 +599,10 @@ endif
 
 ifeq ($(KOKKOS_INTERNAL_ENABLE_LARGE_MEM_TESTS), 1)
   tmp := $(call kokkos_append_header,"\#define KOKKOS_ENABLE_LARGE_MEM_TESTS")
+endif
+
+ifeq ($(KOKKOS_INTERNAL_ENABLE_MEMORY_DEBUGGER), 1)
+  tmp := $(call kokkos_append_header, "\#define KOKKOS_ENABLE_MEMORY_DEBUGGER")
 endif
 
 tmp := $(call kokkos_append_header,"/* Optimization Settings */")
