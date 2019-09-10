@@ -1720,7 +1720,8 @@ class View : public ViewTraits<DataType, Properties...> {
   // Standard destructor, constructors, and assignment operators
 
   KOKKOS_INLINE_FUNCTION
-  ~View() {}
+  ~View() {
+  }
 
   KOKKOS_INLINE_FUNCTION
   View() : m_track(), m_map() {}
@@ -1833,11 +1834,19 @@ class View : public ViewTraits<DataType, Properties...> {
 
     // result needs to be in the same memoryspace as the buffers
     typename traits::memory_space spc;
-    int* result = (int*)spc.allocate(sizeof(int));
-    rec->m_destroy.verify_buffer_regions(result);
-
     Kokkos::HostSpace hsp;
     int* hResult = (int*)hsp.allocate(sizeof(int));
+    *hResult = 0;
+    int* result = (int*)spc.allocate(sizeof(int));
+    if (std::is_same<typename traits::memory_space, Kokkos::HostSpace>::value) {
+      *result = *hResult;
+    } else {
+      Kokkos::Impl::DeepCopy<typename traits::memory_space, Kokkos::HostSpace>(
+          result, hResult, sizeof(int));
+    }
+
+    rec->m_destroy.verify_buffer_regions(result);
+
     if (std::is_same<typename traits::memory_space, Kokkos::HostSpace>::value) {
       *hResult = *result;
     } else {
@@ -1845,8 +1854,10 @@ class View : public ViewTraits<DataType, Properties...> {
           hResult, result, sizeof(int));
     }
 
-    // need a way to get the result from the device
-    return (hResult == 0);
+    if (*hResult == 0)
+       return true;
+    else 
+       return false;
   }
   //----------------------------------------
   // Allocation according to allocation properties and array layout

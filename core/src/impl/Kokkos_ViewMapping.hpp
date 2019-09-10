@@ -59,7 +59,7 @@
 #include <impl/Kokkos_Profiling_Interface.hpp>
 #endif
 
-#ifdef ENABLE_MEMORY_DEBUGGER
+#ifdef KOKKOS_ENABLE_MEMORY_DEBUGGER
 #define DEBUG_MEMORY_OPTION true
 #else
 #define DEBUG_MEMORY_OPTION false
@@ -2745,16 +2745,26 @@ struct ViewValueFunctor;
 
 template <class ExecSpace, class ValueType>
 struct ViewValueFunctor<ExecSpace, ValueType, false /* is_scalar */> {
-  typedef Kokkos::RangePolicy<ExecSpace> PolicyType;
   typedef typename ExecSpace::execution_space Exec;
+  struct TagConstructSAR {};
+  struct TagConstructDebugSAR {};
+  struct TagVerifyBuffer {};
+  typedef Kokkos::RangePolicy<ExecSpace, TagConstructSAR> ConstructPolicyType;
+  typedef Kokkos::RangePolicy<ExecSpace, TagConstructDebugSAR>
+      DebugConstructPolicyType;
+  typedef Kokkos::RangePolicy<ExecSpace, TagVerifyBuffer> VerifyPolicyType;
 
   Exec space;
   ValueType* ptr;
   size_t n;
   bool destroy;
+  char * begin;
+  char * end;
+  void * verify_result;
+  bool m_Debug;
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(const size_t i) const {
+  void operator()(const TagConstructSAR &, const size_t i) const {
     if (destroy) {
       (ptr + i)->~ValueType();
     }  // KOKKOS_IMPL_CUDA_CLANG_WORKAROUND this line causes ptax error
@@ -2764,13 +2774,53 @@ struct ViewValueFunctor<ExecSpace, ValueType, false /* is_scalar */> {
     }
   }
 
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const TagConstructDebugSAR &, const size_t i) const {
+    if (destroy) {
+      (ptr + i)->~ValueType();
+    }  // KOKKOS_IMPL_CUDA_CLANG_WORKAROUND this line causes ptax error
+       // __cxa_begin_catch in nested_view unit-test
+    else {
+      new (ptr + i) ValueType();
+      size_t debug_start = i * sizeof(ValueType);
+      size_t debug_end = debug_start + sizeof(ValueType);
+      for ( size_t r = debug_start; r < debug_end; r++) {
+         begin[r] = 0xFE;
+         end[r] = 0xFE;
+      }
+    } 
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const TagVerifyBuffer&, const size_t i) const {
+    size_t debug_start = i * sizeof(ValueType);
+    size_t debug_end = debug_start + sizeof(ValueType);
+    for ( size_t r = debug_start; r < debug_end; r++) {
+       if (begin[r] != 0xFE) {
+         Kokkos::atomic_exchange((int*)verify_result, (int)1);
+       }
+       if (end[r] != 0xFE) {
+         Kokkos::atomic_exchange((int*)verify_result, (int)1);
+       }
+    }
+  }
+
   ViewValueFunctor()                        = default;
   ViewValueFunctor(const ViewValueFunctor&) = default;
   ViewValueFunctor& operator=(const ViewValueFunctor&) = default;
 
   ViewValueFunctor(ExecSpace const& arg_space, ValueType* const arg_ptr,
-                   size_t const arg_n)
-      : space(arg_space), ptr(arg_ptr), n(arg_n), destroy(false) {}
+                   size_t const arg_n, bool debug_ = false)
+      : space(arg_space), ptr(arg_ptr), n(arg_n), destroy(false),
+        begin(nullptr), end(nullptr), m_Debug(debug_) {
+     if (m_Debug) {
+        size_t buffer_size = arg_n * sizeof(ValueType);
+        begin = reinterpret_cast<char*>(arg_ptr);
+        begin -= buffer_size;
+        end = reinterpret_cast<char*>(arg_ptr);
+        end += buffer_size;
+     }
+  }
 
   void execute(bool arg) {
     destroy = arg;
@@ -2784,23 +2834,61 @@ struct ViewValueFunctor<ExecSpace, ValueType, false /* is_scalar */> {
             0, &kpID);
       }
 #endif
-      const Kokkos::Impl::ParallelFor<ViewValueFunctor, PolicyType> closure(
-          *this, PolicyType(0, n));
-      closure.execute();
-      space.fence();
+      if (m_Debug) {
+         const Kokkos::Impl::ParallelFor<ViewValueFunctor, DebugConstructPolicyType> closure(
+             *this, DebugConstructPolicyType(0, n));
+         closure.execute();
+         space.fence();
+      } else {
+         const Kokkos::Impl::ParallelFor<ViewValueFunctor, ConstructPolicyType> closure(
+             *this, ConstructPolicyType(0, n));
+         closure.execute();
+         space.fence();
+      }
 #if defined(KOKKOS_ENABLE_PROFILING)
       if (Kokkos::Profiling::profileLibraryLoaded()) {
         Kokkos::Profiling::endParallelFor(kpID);
       }
 #endif
     } else {
-      for (size_t i = 0; i < n; ++i) operator()(i);
+      if (m_Debug) {
+         for (size_t i = 0; i < n; ++i) operator()(TagConstructDebugSAR(), i);
+      } else {
+         for (size_t i = 0; i < n; ++i) operator()(TagConstructSAR(), i);
+      }
     }
   }
 
   void construct_shared_allocation() { execute(false); }
 
   void destroy_shared_allocation() { execute(true); }
+
+  void verify_buffer_regions(void* pResult) {
+
+    if (m_Debug) {
+       verify_result = pResult;
+       if (!space.in_parallel()) {
+#if defined(KOKKOS_ENABLE_PROFILING)
+         uint64_t kpID = 0;
+         if (Kokkos::Profiling::profileLibraryLoaded()) {
+           Kokkos::Profiling::beginParallelFor("Kokkos::View::verify_buffer", 0,
+                                            &kpID);
+         }
+#endif
+         const Kokkos::Impl::ParallelFor<ViewValueFunctor, VerifyPolicyType>
+             closure(*this, VerifyPolicyType(0, n));
+         closure.execute();
+         space.fence();
+#if defined(KOKKOS_ENABLE_PROFILING)
+         if (Kokkos::Profiling::profileLibraryLoaded()) {
+           Kokkos::Profiling::endParallelFor(kpID);
+         }
+#endif
+       } else {
+         for (size_t i = 0; i < n; ++i) operator()(TagVerifyBuffer(), i);
+       }
+     }
+  }
 };
 
 template <class ExecSpace, class ValueType>
@@ -2816,10 +2904,28 @@ struct ViewValueFunctor<ExecSpace, ValueType, true /* is_scalar */> {
   ExecSpace space;
   ValueType* ptr;
   size_t n;
-  char* begin;
-  char* end;
+  ValueType* begin;
+  ValueType* end;
   bool m_Debug;
   void* verify_result;
+  
+  template<class T>
+  KOKKOS_INLINE_FUNCTION
+  static constexpr
+  typename Kokkos::Impl::enable_if<sizeof(T) == sizeof(int), T>::type
+  get_debug_value() {
+     return (T)0xFEFEFEFE;
+  }
+
+  template<class T>
+  KOKKOS_INLINE_FUNCTION
+  static constexpr
+  typename Kokkos::Impl::enable_if<
+             sizeof(T) != sizeof(int) && sizeof(T) == sizeof(unsigned long long int),
+             T>::type
+  get_debug_value() {
+     return (T)0xFEFEFEFEFEFEFEFE;
+  }
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagConstructSAR&, const size_t i) const {
@@ -2828,14 +2934,17 @@ struct ViewValueFunctor<ExecSpace, ValueType, true /* is_scalar */> {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagConstructDebugSAR&, const size_t i) const {
-    ptr[i]   = ValueType();
-    begin[i] = 0xFE;
-    end[i]   = 0xFE;
+    ptr[i]   = ValueType();    
+    begin[i] = get_debug_value<ValueType>();
+    end[i]   = get_debug_value<ValueType>();
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagVerifyBuffer&, const size_t i) const {
-    if ((begin[i] != 0xFE) || (end[i] != 0xFE)) {
+    if (begin[i] != get_debug_value<ValueType>()) {
+      Kokkos::atomic_exchange((int*)verify_result, (int)1);
+    }
+    if (end[i] != get_debug_value<ValueType>()) {
       Kokkos::atomic_exchange((int*)verify_result, (int)1);
     }
   }
@@ -2853,10 +2962,10 @@ struct ViewValueFunctor<ExecSpace, ValueType, true /* is_scalar */> {
         end(nullptr),
         m_Debug(debug_) {
     if (m_Debug) {
-      begin = reinterpret_cast<char*>(ptr);
+      begin = ptr;
       begin -= arg_n;
 
-      end = reinterpret_cast<char*>(ptr);
+      end = ptr;
       end += arg_n;
     }
   }
@@ -2897,27 +3006,30 @@ struct ViewValueFunctor<ExecSpace, ValueType, true /* is_scalar */> {
   }
 
   void verify_buffer_regions(void* pResult) {
-    verify_result = pResult;
-    if (!space.in_parallel()) {
+
+    if (m_Debug) {
+       verify_result = pResult;
+       if (!space.in_parallel()) {
 #if defined(KOKKOS_ENABLE_PROFILING)
-      uint64_t kpID = 0;
-      if (Kokkos::Profiling::profileLibraryLoaded()) {
-        Kokkos::Profiling::beginParallelFor("Kokkos::View::verify_buffer", 0,
+         uint64_t kpID = 0;
+         if (Kokkos::Profiling::profileLibraryLoaded()) {
+           Kokkos::Profiling::beginParallelFor("Kokkos::View::verify_buffer", 0,
                                             &kpID);
-      }
+         }
 #endif
-      const Kokkos::Impl::ParallelFor<ViewValueFunctor, VerifyPolicyType>
-          closure(*this, VerifyPolicyType(0, n));
-      closure.execute();
-      space.fence();
+         const Kokkos::Impl::ParallelFor<ViewValueFunctor, VerifyPolicyType>
+             closure(*this, VerifyPolicyType(0, n));
+         closure.execute();
+         space.fence();
 #if defined(KOKKOS_ENABLE_PROFILING)
-      if (Kokkos::Profiling::profileLibraryLoaded()) {
-        Kokkos::Profiling::endParallelFor(kpID);
-      }
+         if (Kokkos::Profiling::profileLibraryLoaded()) {
+           Kokkos::Profiling::endParallelFor(kpID);
+         }
 #endif
-    } else {
-      for (size_t i = 0; i < n; ++i) operator()(TagVerifyBuffer(), i);
-    }
+       } else {
+         for (size_t i = 0; i < n; ++i) operator()(TagVerifyBuffer(), i);
+       }
+     }
   }
 
   void destroy_shared_allocation() {}

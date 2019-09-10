@@ -77,6 +77,10 @@ ifeq ($(KOKKOS_INTERNAL_USE_CUDA), 1)
     OBJ_CUDA += TestCuda_UniqueToken.o
     OBJ_CUDA += TestCuda_LocalDeepCopy.o
 
+ifeq ($(KOKKOS_INTERNAL_ENABLE_MEMORY_DEBUGGER), 1)
+    OBJ_CUDA += TestCuda_MemoryDebugger.o
+endif
+
     TARGETS += KokkosCore_UnitTest_Cuda
     TARGETS += KokkosCore_UnitTest_CudaInterOpInit
     TARGETS += KokkosCore_UnitTest_CudaInterOpStreams

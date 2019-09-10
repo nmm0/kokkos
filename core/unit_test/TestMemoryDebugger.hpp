@@ -74,15 +74,17 @@ struct TestMemoryDebugger {
         Kokkos::RangePolicy<ExecSpace>(0, N), KOKKOS_LAMBDA(const int i) {
           A(i) = i * 2;
           B(i) = i * 3;
+
+          //  this section insert bad data before and after the given range.
           if (run_out_of_bounds) {
             T* tA = A.data();
             T* tB = B.data();
             tA = (tA - 5);
-            *tA = 10;
+            *tA = (T)10.5;
             for (int r = 0; r < (local_N + 5); r++) {
               tB++;
             }
-            *tB = 10;
+            *tB = (T)16.3;
           }
         });
     Kokkos::fence();
@@ -104,15 +106,19 @@ struct TestMemoryDebugger {
 
 TEST_F(TEST_CATEGORY, memory_debugger_good) {
   {
-    TestMemoryDebugger<TEST_EXECSPACE, Kokkos::CudaSpace, double> f(100);
+    TestMemoryDebugger<TEST_EXECSPACE, Kokkos::CudaSpace, int> f(100);
     f.run_test(false);
+    TestMemoryDebugger<TEST_EXECSPACE, Kokkos::CudaSpace, double> f2(100);
+    f2.run_test(false);
   }
 }
 
 TEST_F(TEST_CATEGORY, memory_debugger_bad) {
   {
-    TestMemoryDebugger<TEST_EXECSPACE, Kokkos::CudaSpace, double> f(100);
+    TestMemoryDebugger<TEST_EXECSPACE, Kokkos::CudaSpace, int> f(100);
     f.run_test(true);
+    TestMemoryDebugger<TEST_EXECSPACE, Kokkos::CudaSpace, double> f2(100);
+    f2.run_test(true);
   }
 }
 
