@@ -106,11 +106,10 @@ struct TestMemoryDebugger {
 
 template <class ExecSpace, class MemorySpace>
 struct TestNonScalarMemoryDebugger {
-
   struct ViewContainer {
-     long part_one [3];
-     long part_two [3];
-     long part_three [3];
+    long part_one[3];
+    long part_two[3];
+    long part_three[3];
   };
 
   typedef Kokkos::View<ViewContainer, MemorySpace> view_type_one;
@@ -124,22 +123,21 @@ struct TestNonScalarMemoryDebugger {
     view_type_one A("a");
     view_type_multiple B("b", N);
 
-    typename view_type_one::HostMirror h_A = Kokkos::create_mirror_view(A);
+    typename view_type_one::HostMirror h_A      = Kokkos::create_mirror_view(A);
     typename view_type_multiple::HostMirror h_B = Kokkos::create_mirror_view(B);
 
     for (int i = 0; i < 3; i++) {
-       h_A().part_one[i] = i;
-       h_A().part_two[i] = 10+i;
-       h_A().part_three[i] = 100+i;
+      h_A().part_one[i]   = i;
+      h_A().part_two[i]   = 10 + i;
+      h_A().part_three[i] = 100 + i;
     }
     for (int i = 0; i < N; i++) {
-       for (int r = 0; r< 3; r++) {
-          h_B(i).part_one[r] = 0;
-          h_B(i).part_two[r] = 0;
-          h_B(i).part_three[r] = 0;
-       }
+      for (int r = 0; r < 3; r++) {
+        h_B(i).part_one[r]   = 0;
+        h_B(i).part_two[r]   = 0;
+        h_B(i).part_three[r] = 0;
+      }
     }
-
 
     Kokkos::deep_copy(A, h_A);
     Kokkos::deep_copy(B, h_B);
@@ -147,18 +145,18 @@ struct TestNonScalarMemoryDebugger {
     size_t local_N = N;
     Kokkos::parallel_for(
         Kokkos::RangePolicy<ExecSpace>(0, N), KOKKOS_LAMBDA(const int i) {
-           for ( int r = 0; r < 3; r++ ) {
-              B(i).part_one[r] = A().part_one[r] * i;
-              B(i).part_two[r] = A().part_two[r] * i;
-              B(i).part_three[r] = A().part_three[r] * i;
-           }
+          for (int r = 0; r < 3; r++) {
+            B(i).part_one[r]   = A().part_one[r] * i;
+            B(i).part_two[r]   = A().part_two[r] * i;
+            B(i).part_three[r] = A().part_three[r] * i;
+          }
 
           //  this section insert bad data before and after the given range.
           if (run_out_of_bounds) {
-            long* tA = (long*)A.data();
+            long* tA          = (long*)A.data();
             ViewContainer* tB = B.data();
-            tA    = (tA - 5);
-            *tA   = 10;
+            tA                = (tA - 5);
+            *tA               = 10;
             for (int r = 0; r < (local_N + 5); r++) {
               tB++;
             }
@@ -169,11 +167,11 @@ struct TestNonScalarMemoryDebugger {
     Kokkos::deep_copy(h_B, B);
 
     for (int i = 0; i < N; i++) {
-       for (int r = 0; r < 3; r++) {
-          KOKKOS_ASSERT(h_B(i).part_one[r] == i * h_A().part_one[r]);
-          KOKKOS_ASSERT(h_B(i).part_two[r] == i * h_A().part_two[r]);
-          KOKKOS_ASSERT(h_B(i).part_three[r] == i * h_A().part_three[r]);
-       }
+      for (int r = 0; r < 3; r++) {
+        KOKKOS_ASSERT(h_B(i).part_one[r] == i * h_A().part_one[r]);
+        KOKKOS_ASSERT(h_B(i).part_two[r] == i * h_A().part_two[r]);
+        KOKKOS_ASSERT(h_B(i).part_three[r] == i * h_A().part_three[r]);
+      }
     }
     if (run_out_of_bounds) {
       bool bFail = A.verify_data();
