@@ -2785,8 +2785,8 @@ struct ViewValueFunctor<ExecSpace, ValueType, false /* is_scalar */> {
       size_t debug_start = i * sizeof(ValueType);
       size_t debug_end   = debug_start + sizeof(ValueType);
       for (size_t r = debug_start; r < debug_end; r++) {
-        begin[r] = 0xFE;
-        end[r]   = 0xFE;
+        begin[r] = (char)0xFE;
+        end[r]   = (char)0xFE;
       }
     }
   }
@@ -2915,18 +2915,28 @@ struct ViewValueFunctor<ExecSpace, ValueType, true /* is_scalar */> {
   void* verify_result;
 
   template <class T>
-  KOKKOS_INLINE_FUNCTION static constexpr
-      typename Kokkos::Impl::enable_if<sizeof(T) == sizeof(int), T>::type
+  KOKKOS_INLINE_FUNCTION static 
+      typename std::enable_if<sizeof(T) == sizeof(int), T>::type
       get_debug_value() {
     return (T)0xFEFEFEFE;
   }
 
   template <class T>
-  KOKKOS_INLINE_FUNCTION static constexpr typename Kokkos::Impl::enable_if<
+  KOKKOS_INLINE_FUNCTION static typename std::enable_if<
       sizeof(T) != sizeof(int) && sizeof(T) == sizeof(unsigned long long int),
       T>::type
   get_debug_value() {
     return (T)0xFEFEFEFEFEFEFEFE;
+  }
+
+  template <class T>
+  KOKKOS_INLINE_FUNCTION static typename std::enable_if<
+      (sizeof(T) < sizeof(int)),T>::type
+  get_debug_value() {
+    if (sizeof(T) == 2)
+      return (T)0xFEFE;
+    else
+      return (T)0xFE;
   }
 
   KOKKOS_INLINE_FUNCTION
