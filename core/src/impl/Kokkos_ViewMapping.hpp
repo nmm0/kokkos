@@ -2915,24 +2915,25 @@ struct ViewValueFunctor<ExecSpace, ValueType, true /* is_scalar */> {
   void* verify_result;
 
   template <class T>
-  KOKKOS_INLINE_FUNCTION static 
+  KOKKOS_INLINE_FUNCTION static
       typename std::enable_if<sizeof(T) == sizeof(int), T>::type
       get_debug_value() {
     return (T)0xFEFEFEFE;
   }
 
   template <class T>
-  KOKKOS_INLINE_FUNCTION static typename std::enable_if<
-      sizeof(T) != sizeof(int) && sizeof(T) == sizeof(unsigned long long int),
-      T>::type
-  get_debug_value() {
+  KOKKOS_INLINE_FUNCTION static
+      typename std::enable_if<sizeof(T) != sizeof(int) &&
+                                  sizeof(T) == sizeof(unsigned long long int),
+                              T>::type
+      get_debug_value() {
     return (T)0xFEFEFEFEFEFEFEFE;
   }
 
   template <class T>
-  KOKKOS_INLINE_FUNCTION static typename std::enable_if<
-      (sizeof(T) < sizeof(int)),T>::type
-  get_debug_value() {
+  KOKKOS_INLINE_FUNCTION static
+      typename std::enable_if<(sizeof(T) < sizeof(int)), T>::type
+      get_debug_value() {
     if (sizeof(T) == 2)
       return (T)0xFEFE;
     else
