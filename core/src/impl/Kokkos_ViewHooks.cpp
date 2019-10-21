@@ -43,10 +43,9 @@
 
 #include <Kokkos_ViewHooks.hpp>
 
-#if defined( KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST )
-namespace Kokkos
-{
-  ViewHooks::callback_type ViewHooks::s_callback;
-  ViewHooks::const_callback_type ViewHooks::s_const_callback;
-}
+#if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+namespace Kokkos {
+ViewHooks::callback_type ViewHooks::s_callback;
+ViewHooks::const_callback_type ViewHooks::s_const_callback;
+}  // namespace Kokkos
 #endif

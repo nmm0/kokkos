@@ -61,7 +61,7 @@ namespace Kokkos
   
   template< class DataType , class ... Properties >
   struct ViewTraits;
-  
+
   namespace Impl
   {
     template< class DataType, class... Properties >
@@ -72,13 +72,13 @@ namespace Kokkos
     {
       using traits_type = ViewTraits< DataType, Properties... >;
       using new_data_type = typename traits_type::non_const_data_type;
-      
+
       // Use a contiguous layout type. Keep layout left if it already is, otherwise use layout right
       using layout_type = typename std::conditional< std::is_same< LayoutLeft, typename traits_type::array_layout >::value,
         LayoutLeft, LayoutRight >::type;
-      
+
       using new_view_type = View< new_data_type, layout_type, HostSpace, MemoryTraits< Unmanaged > >;
-  
+
       return new_view_type( reinterpret_cast< typename new_view_type::pointer_type >( buff )
         , view.rank_dynamic > 0 ? view.extent(0): KOKKOS_IMPL_CTOR_DEFAULT_ARG
         , view.rank_dynamic > 1 ? view.extent(1): KOKKOS_IMPL_CTOR_DEFAULT_ARG
@@ -90,161 +90,161 @@ namespace Kokkos
         , view.rank_dynamic > 7 ? view.extent(7): KOKKOS_IMPL_CTOR_DEFAULT_ARG );
     }
   }
-  
+
   class ConstViewHolderBase
   {
   public:
-    
+
     virtual size_t span() const = 0;
     virtual bool span_is_contiguous() const = 0;
     virtual const void *data() const = 0;
     virtual std::string label() const noexcept =0;
-  
+
     virtual ConstViewHolderBase *clone() const = 0;
     virtual size_t data_type_size() const = 0;
-    
+
     virtual bool is_hostspace() const noexcept = 0;
-    
+
     virtual void deep_copy_to_buffer( unsigned char *buff ) = 0;
-    
+
   private:
   };
-  
+
   class ViewHolderBase : public ConstViewHolderBase
   {
   public:
-    
+
     virtual void *data() = 0;
     virtual ViewHolderBase *clone() const = 0;
     virtual void deep_copy_from_buffer( unsigned char *buff ) = 0;
   };
-  
+
   template< typename View, typename Enable = void >
   class ViewHolder : public ViewHolderBase
   {
   public:
-    
+
     explicit ViewHolder( View &view )
       : m_view( &view )
     {}
-    
+
     size_t span() const override { return m_view->span(); }
     bool span_is_contiguous() const override { return m_view->span_is_contiguous(); }
     const void *data() const override { return m_view->data(); };
     void *data() override { return m_view->data(); };
-  
+
     ViewHolder *clone() const override
     {
       return new ViewHolder( *this );
     }
-    
+
     std::string label() const noexcept override { return m_view->label(); }
     size_t data_type_size() const noexcept override { return sizeof( typename View::value_type ); }
-  
+
     bool is_hostspace() const noexcept override { return std::is_same< typename View::memory_space , HostSpace >::value; }
-  
+
     void deep_copy_to_buffer( unsigned char *buff ) override
     {
       auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
       deep_copy( unmanaged, *m_view );
     }
-  
+
     void deep_copy_from_buffer( unsigned char *buff ) override
     {
       auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
       deep_copy( *m_view, unmanaged );
     }
-  
+
   private:
-    
+
     View *m_view;
   };
-  
+
   template< class View >
   class ViewHolder< View, typename std::enable_if< std::is_const< typename View::value_type >::value >::type > : public ConstViewHolderBase
   {
   public:
-    
+
     explicit ViewHolder( View &view )
       : m_view( &view )
     {}
-    
+
     size_t span() const override { return m_view->span(); }
     bool span_is_contiguous() const override { return m_view->span_is_contiguous(); }
     const void *data() const override { return m_view->data(); };
     size_t data_type_size() const noexcept override { return sizeof( typename View::value_type ); }
-  
+
     bool is_hostspace() const noexcept override { return std::is_same< typename View::memory_space , HostSpace >::value; }
-  
+
     ViewHolder *clone() const override
     {
       return new ViewHolder( *this );
     }
-  
+
     std::string label() const noexcept override { return m_view->label(); }
-  
+
     void deep_copy_to_buffer( unsigned char *buff ) override
     {
       auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
       deep_copy( unmanaged, *m_view );
     }
-    
+
   private:
-    
+
     View *m_view;
   };
-  
+
   struct ViewHooks
   {
     using callback_type = std::function< void( ViewHolderBase & ) >;
     using const_callback_type = std::function< void( ConstViewHolderBase & ) >;
-    
+
     template< typename F, typename ConstF >
     static void set( F &&fun, ConstF &&const_fun )
     {
       s_callback = std::forward< F >( fun );
       s_const_callback = std::forward< ConstF >( const_fun );
     }
-    
+
     static void clear()
     {
       s_callback = callback_type{};
       s_const_callback = const_callback_type{};
     }
-    
+
     static bool is_set() noexcept
     {
       return static_cast< bool >( s_callback ) || static_cast< bool >( s_const_callback );
     }
-    
+
     template< class DataType, class ... Properties >
     static void call( View< DataType, Properties... > &view )
     {
       auto holder = ViewHolder< View< DataType, Properties... > >( view );
-      
+
       do_call( holder );
     }
-    
+
   private:
-    
+
     static void do_call( ViewHolderBase &view )
     {
       if ( s_callback )
         s_callback( view );
     }
-  
+
     static void do_call( ConstViewHolderBase &view )
     {
       if ( s_const_callback )
         s_const_callback( view );
     }
-    
+
     static callback_type s_callback;
     static const_callback_type s_const_callback;
   };
-  
-  
-  
+
+
+
   namespace Impl
   {
     template< class ViewType, class Traits = typename ViewType::traits, class Enabled = void >
@@ -253,7 +253,7 @@ namespace Kokkos
       static void call( ViewType &view )
       {}
     };
-    
+
     template< class ViewType, class Traits >
     struct ViewHooksCaller< ViewType, Traits, typename std::enable_if< !std::is_same< typename Traits::memory_space, AnonymousSpace >::value >::type >
     {
@@ -265,8 +265,8 @@ namespace Kokkos
     };
   }
 
-}
+}  // namespace Kokkos
 
 #endif
 
-#endif //KOKKOS_VIEWHOOKS_HPP
+#endif  // KOKKOS_VIEWHOOKS_HPP
