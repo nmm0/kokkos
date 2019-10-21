@@ -1818,23 +1818,26 @@ inline void deep_copy(
     return;
   }
 
-  if ((((std::ptrdiff_t)dst_start < (std::ptrdiff_t)src_end) &&
-       ((std::ptrdiff_t)dst_end > (std::ptrdiff_t)src_start)) &&
-      ((dst.span_is_contiguous() && src.span_is_contiguous()))) {
-    std::string message("Error: Kokkos::deep_copy of overlapping views: ");
-    message += dst.label();
-    message += "(";
-    message += std::to_string((std::ptrdiff_t)dst_start);
-    message += ",";
-    message += std::to_string((std::ptrdiff_t)dst_end);
-    message += ") ";
-    message += src.label();
-    message += "(";
-    message += std::to_string((std::ptrdiff_t)src_start);
-    message += ",";
-    message += std::to_string((std::ptrdiff_t)src_end);
-    message += ") ";
-    Kokkos::Impl::throw_runtime_exception(message);
+  if (!Kokkos::is_file_space_type<src_memory_space>::value &&
+      !Kokkos::is_file_space_type<dst_memory_space>::value) {
+    if ((((std::ptrdiff_t)dst_start < (std::ptrdiff_t)src_end) &&
+         ((std::ptrdiff_t)dst_end > (std::ptrdiff_t)src_start)) &&
+        ((dst.span_is_contiguous() && src.span_is_contiguous()))) {
+      std::string message("Error: Kokkos::deep_copy of overlapping views A: ");
+      message += dst.label();
+      message += "(";
+      message += std::to_string((std::ptrdiff_t)dst_start);
+      message += ",";
+      message += std::to_string((std::ptrdiff_t)dst_end);
+      message += ") ";
+      message += src.label();
+      message += "(";
+      message += std::to_string((std::ptrdiff_t)src_start);
+      message += ",";
+      message += std::to_string((std::ptrdiff_t)src_end);
+      message += ") ";
+      Kokkos::Impl::throw_runtime_exception(message);
+    }
   }
 
   // Check for same extents
@@ -2989,24 +2992,31 @@ inline void deep_copy(
                                          dst_memory_space>::accessible
   };
 
-  // Error out for non-identical overlapping views.
-  if ((((std::ptrdiff_t)dst_start < (std::ptrdiff_t)src_end) &&
-       ((std::ptrdiff_t)dst_end > (std::ptrdiff_t)src_start)) &&
-      ((dst.span_is_contiguous() && src.span_is_contiguous()))) {
-    std::string message("Error: Kokkos::deep_copy of overlapping views: ");
-    message += dst.label();
-    message += "(";
-    message += std::to_string((std::ptrdiff_t)dst_start);
-    message += ",";
-    message += std::to_string((std::ptrdiff_t)dst_end);
-    message += ") ";
-    message += src.label();
-    message += "(";
-    message += std::to_string((std::ptrdiff_t)src_start);
-    message += ",";
-    message += std::to_string((std::ptrdiff_t)src_end);
-    message += ") ";
-    Kokkos::Impl::throw_runtime_exception(message);
+  // Checking for Overlapping Views.
+  dst_value_type* dst_start = dst.data();
+  dst_value_type* dst_end   = dst.data() + dst.span();
+  src_value_type* src_start = src.data();
+  src_value_type* src_end   = src.data() + src.span();
+  if (!Kokkos::is_file_space_type<src_memory_space>::value &&
+      !Kokkos::is_file_space_type<dst_memory_space>::value) {
+    if ((((std::ptrdiff_t)dst_start < (std::ptrdiff_t)src_end) &&
+         ((std::ptrdiff_t)dst_end > (std::ptrdiff_t)src_start)) &&
+        ((dst.span_is_contiguous() && src.span_is_contiguous()))) {
+      std::string message("Error: Kokkos::deep_copy of overlapping views B: ");
+      message += dst.label();
+      message += "(";
+      message += std::to_string((std::ptrdiff_t)dst_start);
+      message += ",";
+      message += std::to_string((std::ptrdiff_t)dst_end);
+      message += ") ";
+      message += src.label();
+      message += "(";
+      message += std::to_string((std::ptrdiff_t)src_start);
+      message += ",";
+      message += std::to_string((std::ptrdiff_t)src_end);
+      message += ") ";
+      Kokkos::Impl::throw_runtime_exception(message);
+    }
   }
 
   // Check for same extents
@@ -3505,6 +3515,31 @@ typename Impl::MirrorType<Space, T, P...>::view_type create_mirror(
         nullptr) {
   return typename Impl::MirrorType<Space, T, P...>::view_type(src.label(),
                                                               src.layout());
+}
+
+// Create a mirror in a new space (specialization for different space)
+template <class Space, class T, class... P>
+typename Impl::MirrorType<Space, T, P...>::view_type create_chkpt_mirror(
+    const Space&, const Kokkos::View<T, P...>& src,
+    typename std::enable_if<std::is_same<
+        typename ViewTraits<T, P...>::specialize, void>::value>::type* = 0) {
+  typedef
+      typename Impl::MirrorType<Space, T, P...>::view_type chkpt_mirror_type;
+  std::string sLabel = src.label();
+  if (sLabel.length() == 0) {
+    char sTemp[32];
+    sprintf(sTemp, "view_%08x", (unsigned long)src.data());
+    sLabel = sTemp;
+    printf(
+        "WARNING: creating checkpoint mirror without a label...generating auto "
+        "label: %s \n",
+        sLabel.c_str());
+  }
+  chkpt_mirror_type chkpt(sLabel, src.layout());
+  Kokkos::Impl::SharedAllocationRecord<void, void>::track_mirror(
+      Space::name(), sLabel, chkpt.data(), src.data());
+
+  return chkpt;
 }
 
 template <class T, class... P>

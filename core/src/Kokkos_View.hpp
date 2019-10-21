@@ -1818,8 +1818,19 @@ class View : public ViewTraits<DataType, Properties...> {
   View(const View& rhs)
       : m_track(rhs.m_track, traits::is_managed), m_map(rhs.m_map)
   {
-#ifdef KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST
+#if defined( KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST )
     Impl::ViewHooksCaller< View >::call( *this );
+    typedef typename traits::device_type::memory_space specialized_memory_space;
+    if (Kokkos::Impl::is_resilient_space<specialized_memory_space>::value &&
+        Kokkos::Impl::SharedAllocationRecord<void,
+                                             void>::duplicates_enabled()) {
+      shared_record_type* record =
+          reinterpret_cast<shared_record_type*>(m_map.duplicate_shared(
+              m_track.template get_record<specialized_memory_space>()));
+
+      // Setup and initialization complete, start tracking
+      m_track.assign_allocated_record_to_uninitialized(record);
+    }
 #endif
   }
 
@@ -2387,6 +2398,14 @@ inline void shared_allocation_tracking_disable() {
 
 inline void shared_allocation_tracking_enable() {
   Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enable();
+}
+
+inline void shared_allocation_enable_duplicates() {
+  Kokkos::Impl::SharedAllocationRecord<void, void>::duplicates_enable();
+}
+
+inline void shared_allocation_disable_duplicates() {
+  Kokkos::Impl::SharedAllocationRecord<void, void>::duplicates_disable();
 }
 
 } /* namespace Impl */

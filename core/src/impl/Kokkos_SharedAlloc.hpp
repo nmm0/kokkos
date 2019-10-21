@@ -51,6 +51,20 @@
 namespace Kokkos {
 namespace Impl {
 
+template <class T, class Enable = void>
+struct is_resilient_space {
+  enum { value = 0 };
+};
+
+template <class T>
+struct is_resilient_space<
+    T, typename std::enable_if<std::is_same<
+           typename std::remove_cv<T>::type,
+           typename std::remove_cv<typename T::resilient_space>::type>::value>::
+           type> {
+  enum { value = 1 };
+};
+
 template <class MemorySpace = void, class DestroyFunctor = void>
 class SharedAllocationRecord;
 
@@ -77,6 +91,31 @@ class SharedAllocationHeader {
 
   KOKKOS_INLINE_FUNCTION
   const char* label() const { return m_label; }
+};
+
+struct MirrorTracker {
+  std::string label;
+  void* dst;
+  void* src;
+  std::string mem_space_name;
+  MirrorTracker* pNext;
+  MirrorTracker* pPrev;
+
+  MirrorTracker()
+      : label(""),
+        dst(nullptr),
+        src(nullptr),
+        mem_space_name(""),
+        pNext(nullptr),
+        pPrev(nullptr) {}
+
+  MirrorTracker(const MirrorTracker& rhs)
+      : label(rhs.label),
+        dst(rhs.dst),
+        src(rhs.src),
+        mem_space_name(rhs.mem_space_name),
+        pNext(nullptr),
+        pPrev(nullptr) {}
 };
 
 template <>
@@ -116,11 +155,13 @@ class SharedAllocationRecord<void, void> {
       function_type arg_dealloc);
  private:
   static KOKKOS_THREAD_LOCAL int t_tracking_enabled;
+  static KOKKOS_THREAD_LOCAL int t_duplicates_enabled;
 
  public:
   virtual std::string get_label() const { return std::string("Unmanaged"); }
 
   static int tracking_enabled() { return t_tracking_enabled; }
+  static int duplicates_enabled() { return t_duplicates_enabled; }
 
   /**\brief A host process thread claims and disables the
    *        shared allocation tracking flag.
@@ -133,6 +174,21 @@ class SharedAllocationRecord<void, void> {
   static void tracking_enable() { t_tracking_enabled = 1; }
 
   virtual ~SharedAllocationRecord() = default;
+  static void duplicates_enable() { t_duplicates_enabled = 1; }
+
+  static void duplicates_disable() { t_duplicates_enabled = 0; }
+
+  template <class MemSpace>
+  inline static typename std::enable_if<
+      !Kokkos::Impl::is_resilient_space<MemSpace, void>::value>::type
+  track_duplicate_record(SharedAllocationRecord* rec) {}
+
+  template <class MemSpace>
+  inline static typename std::enable_if<
+      Kokkos::Impl::is_resilient_space<MemSpace, void>::value>::type
+  track_duplicate_record(SharedAllocationRecord* rec) {
+    MemSpace::track_duplicate(rec);
+  }
 
   SharedAllocationRecord()
       : m_alloc_ptr(nullptr),
@@ -174,6 +230,17 @@ class SharedAllocationRecord<void, void> {
   /* Given a root record and data pointer find the record */
   static SharedAllocationRecord* find(SharedAllocationRecord* const,
                                       void* const);
+
+  static void track_mirror(const std::string mem_space, const std::string lbl,
+                           void* dst_, void* src_);
+  static void release_mirror(void* dst);
+  static void release_mirror(const std::string label);
+
+  static MirrorTracker* get_filtered_mirror_list(const std::string mem_space);
+  static MirrorTracker* get_filtered_mirror_entry(const std::string mem_space,
+                                                  const std::string lbl);
+
+  static MirrorTracker* mirror_list;
 
   /*  Sanity check for the whole set of records to which the input record
    * belongs. Locks the set's insert/erase operations until the sanity check is
@@ -276,15 +343,23 @@ union SharedAllocationTracker {
 
 #define KOKKOS_IMPL_SHARED_ALLOCATION_TRACKER_ENABLED Record::tracking_enabled()
 
+#define KOKKOS_IMPL_SHARED_ALLOCATION_DUPLICATES_ENABLED \
+  Record::duplicates_enabled()
+
 #define KOKKOS_IMPL_SHARED_ALLOCATION_TRACKER_INCREMENT \
   if (!(m_record_bits & DO_NOT_DEREF_FLAG)) Record::increment(m_record);
 
 #define KOKKOS_IMPL_SHARED_ALLOCATION_TRACKER_DECREMENT \
   if (!(m_record_bits & DO_NOT_DEREF_FLAG)) Record::decrement(m_record);
 
+#define KOKKOS_IMPL_SHARED_ALLOCATION_TRACKER_RECORD_INIT \
+  (Record*)(m_record_bits & ~DO_NOT_DEREF_FLAG)
+
 #else
 
 #define KOKKOS_IMPL_SHARED_ALLOCATION_TRACKER_ENABLED 0
+
+#define KOKKOS_IMPL_SHARED_ALLOCATION_DUPLICATES_ENABLED 0
 
 #define KOKKOS_IMPL_SHARED_ALLOCATION_TRACKER_INCREMENT /* */
 
@@ -340,6 +415,13 @@ union SharedAllocationTracker {
   KOKKOS_INLINE_FUNCTION
   bool has_record() const {
     return (m_record_bits & (~DO_NOT_DEREF_FLAG)) != 0;
+  }
+
+  KOKKOS_FORCEINLINE_FUNCTION
+  int tracking_disabled() const {
+    return (int)((m_record_bits & (DO_NOT_DEREF_FLAG)) == DO_NOT_DEREF_FLAG)
+               ? 1
+               : 0;
   }
 
   KOKKOS_FORCEINLINE_FUNCTION
@@ -413,5 +495,7 @@ union SharedAllocationTracker {
 
 } /* namespace Impl */
 } /* namespace Kokkos */
+
+#include <impl/Kokkos_TrackDuplicates.hpp>
 
 #endif

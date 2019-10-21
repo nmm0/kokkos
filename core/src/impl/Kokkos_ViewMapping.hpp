@@ -2738,13 +2738,53 @@ namespace Impl {
  *  called from the shared memory tracking destruction.
  *  Secondarily to have two fewer partial specializations.
  */
-template <class ExecSpace, class ValueType,
-          bool IsScalar = std::is_scalar<ValueType>::value>
+template <class ExecSpace, class ValueType, class MemorySpace,
+          class Enable = void, bool IsScalar = std::is_scalar<ValueType>::value>
 struct ViewValueFunctor;
 
-template <class ExecSpace, class ValueType>
-struct ViewValueFunctor<ExecSpace, ValueType, false /* is_scalar */> {
-  typedef Kokkos::RangePolicy<ExecSpace, Kokkos::IndexType<int64_t>> PolicyType;
+template <class ExecSpace, class ValueType, class MemorySpace>
+struct ViewValueFunctor<
+    ExecSpace, ValueType, MemorySpace,
+    typename std::enable_if<Kokkos::is_file_space_type<MemorySpace>::value,
+                            void>::type,
+    false> {
+  ViewValueFunctor()                        = default;
+  ViewValueFunctor(const ViewValueFunctor&) = default;
+  ViewValueFunctor& operator=(const ViewValueFunctor&) = default;
+
+  ViewValueFunctor(ExecSpace const& arg_space, ValueType* const arg_ptr,
+                   size_t const arg_n) {}
+
+  void construct_shared_allocation() {}
+
+  void destroy_shared_allocation() {}
+};
+
+template <class ExecSpace, class ValueType, class MemorySpace>
+struct ViewValueFunctor<
+    ExecSpace, ValueType, MemorySpace,
+    typename std::enable_if<Kokkos::is_file_space_type<MemorySpace>::value,
+                            void>::type,
+    true> {
+  ViewValueFunctor()                        = default;
+  ViewValueFunctor(const ViewValueFunctor&) = default;
+  ViewValueFunctor& operator=(const ViewValueFunctor&) = default;
+
+  ViewValueFunctor(ExecSpace const& arg_space, ValueType* const arg_ptr,
+                   size_t const arg_n) {}
+
+  void construct_shared_allocation() {}
+
+  void destroy_shared_allocation() {}
+};
+
+template <class ExecSpace, class ValueType, class MemorySpace>
+struct ViewValueFunctor<
+    ExecSpace, ValueType, MemorySpace,
+    typename std::enable_if<!Kokkos::is_file_space_type<MemorySpace>::value,
+                            void>::type,
+    false> {
+  typedef Kokkos::RangePolicy<ExecSpace, Kokkos::IndexType<int64_t>>;
   typedef typename ExecSpace::execution_space Exec;
 
   Exec space;
@@ -2808,8 +2848,12 @@ struct ViewValueFunctor<ExecSpace, ValueType, false /* is_scalar */> {
   void destroy_shared_allocation() { execute(true); }
 };
 
-template <class ExecSpace, class ValueType>
-struct ViewValueFunctor<ExecSpace, ValueType, true /* is_scalar */> {
+template <class ExecSpace, class ValueType, class MemorySpace>
+struct ViewValueFunctor<
+    ExecSpace, ValueType, MemorySpace,
+    typename std::enable_if<!Kokkos::is_file_space_type<MemorySpace>::value,
+                            void>::type,
+    true> {
   typedef Kokkos::RangePolicy<ExecSpace, Kokkos::IndexType<int64_t>> PolicyType;
 
   ExecSpace space;
@@ -3145,7 +3189,8 @@ class ViewMapping<
     typedef typename alloc_prop::execution_space execution_space;
     typedef typename Traits::memory_space memory_space;
     typedef typename Traits::value_type value_type;
-    typedef ViewValueFunctor<execution_space, value_type> functor_type;
+    typedef ViewValueFunctor<execution_space, value_type, memory_space>
+        functor_type;
     typedef Kokkos::Impl::SharedAllocationRecord<memory_space, functor_type>
         record_type;
 
@@ -3192,6 +3237,50 @@ class ViewMapping<
       // Construct values
       record->m_destroy.construct_shared_allocation();
     }
+
+    return record;
+  }
+
+  //----------------------------------------
+  /*  Allocate and construct mapped array.
+   *  Allocate via shared allocation record and
+   *  return that record for allocation tracking.
+   */
+  template <class mem_space>
+  typename std::enable_if<!Kokkos::Impl::is_resilient_space<mem_space>::value,
+                          Kokkos::Impl::SharedAllocationRecord<>*>::type
+  duplicate_shared(
+      Kokkos::Impl::SharedAllocationRecord<mem_space, void>* orig_rec) {
+    return orig_rec;
+  }
+
+  template <class mem_space>
+  typename std::enable_if<Kokkos::Impl::is_resilient_space<mem_space>::value,
+                          Kokkos::Impl::SharedAllocationRecord<>*>::type
+  duplicate_shared(
+      Kokkos::Impl::SharedAllocationRecord<mem_space, void>* orig_rec) {
+    typedef Kokkos::Impl::SharedAllocationRecord<mem_space, void> record_type;
+
+    std::string label = orig_rec->get_label();
+    printf("allocating duplicate record: %s \n", label.c_str());
+
+    // Create shared memory tracking record with allocate memory from the memory
+    // space
+    record_type* const record =
+        record_type::allocate(orig_rec->get_space(), label, orig_rec->size());
+
+    m_impl_handle = handle_type(reinterpret_cast<pointer_type>(record->data()));
+
+    printf("copy duplicate record: %s \n", label.c_str());
+    Kokkos::Impl::DeepCopy<mem_space, mem_space,
+                           typename mem_space::execution_space>(
+        m_impl_handle, orig_rec->data(), orig_rec->size());
+
+    printf("track duplicate record: %s \n", label.c_str());
+    // Kokkos::ResCudaSpace::template track_duplicate<typename
+    // Traits::value_type>(orig_rec, record);
+    Kokkos::Experimental::template track_duplicate<typename Traits::value_type,
+                                                   mem_space>(orig_rec, record);
 
     return record;
   }
