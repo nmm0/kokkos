@@ -311,20 +311,20 @@ struct functor_teamvector_reduce {
     Scalar value = Scalar();
     shared_scalar_t shared_value(team.team_scratch(0), 1);
 
-    Kokkos::parallel_reduce(
-        Kokkos::TeamVectorRange(team, 131),
-        [&](int i, Scalar& val) {
-          val += i - team.league_rank() + team.league_size() + team.team_size();
-        },
-        shared_value(0));
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, 131),
+                            [&](int i, Scalar& val) {
+                              val += i - team.league_rank() +
+                                     team.league_size() + team.team_size();
+                            },
+                            shared_value(0));
 
     team.team_barrier();
-    Kokkos::parallel_reduce(
-        Kokkos::TeamVectorRange(team, 131),
-        [&](int i, Scalar& val) {
-          val += i - team.league_rank() + team.league_size() + team.team_size();
-        },
-        value);
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, 131),
+                            [&](int i, Scalar& val) {
+                              val += i - team.league_rank() +
+                                     team.league_size() + team.team_size();
+                            },
+                            value);
 
     //    Kokkos::parallel_reduce( Kokkos::TeamVectorRange( team, 131 ), [&] (
     //    int i, Scalar & val )
@@ -390,19 +390,19 @@ struct functor_teamvector_reduce_reducer {
     Scalar value = 0;
     shared_scalar_t shared_value(team.team_scratch(0), 1);
 
-    Kokkos::parallel_reduce(
-        Kokkos::TeamVectorRange(team, 131),
-        [&](int i, Scalar& val) {
-          val += i - team.league_rank() + team.league_size() + team.team_size();
-        },
-        Kokkos::Sum<Scalar>(value));
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, 131),
+                            [&](int i, Scalar& val) {
+                              val += i - team.league_rank() +
+                                     team.league_size() + team.team_size();
+                            },
+                            Kokkos::Sum<Scalar>(value));
 
-    Kokkos::parallel_reduce(
-        Kokkos::TeamVectorRange(team, 131),
-        [&](int i, Scalar& val) {
-          val += i - team.league_rank() + team.league_size() + team.team_size();
-        },
-        Kokkos::Sum<Scalar>(shared_value(0)));
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, 131),
+                            [&](int i, Scalar& val) {
+                              val += i - team.league_rank() +
+                                     team.league_size() + team.team_size();
+                            },
+                            Kokkos::Sum<Scalar>(shared_value(0)));
 
     team.team_barrier();
 

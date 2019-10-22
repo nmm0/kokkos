@@ -69,10 +69,9 @@ void test_64bit() {
         },
         sum);
     ASSERT_EQ(N, sum);
-    Kokkos::parallel_for(
-        Kokkos::RangePolicy<typename Device::execution_space,
-                            Kokkos::IndexType<int64_t>>(0, N),
-        KOKKOS_LAMBDA(const int64_t& i) { a(i) = 3; });
+    Kokkos::parallel_for(Kokkos::RangePolicy<typename Device::execution_space,
+                                             Kokkos::IndexType<int64_t>>(0, N),
+                         KOKKOS_LAMBDA(const int64_t& i) { a(i) = 3; });
     Kokkos::parallel_reduce(
         Kokkos::RangePolicy<typename Device::execution_space,
                             Kokkos::IndexType<int64_t>>(0, N),
@@ -109,11 +108,10 @@ void test_64bit() {
     int N0    = 1024 * 1024 * 1500;
     int64_t P = 1713091;
     Kokkos::View<int*, Device> a("A", N0);
-    Kokkos::parallel_for(
-        "FillA",
-        Kokkos::RangePolicy<typename Device::execution_space,
-                            Kokkos::IndexType<int>>(0, N0),
-        KOKKOS_LAMBDA(const int& i) { a(i) = i % P; });
+    Kokkos::parallel_for("FillA",
+                         Kokkos::RangePolicy<typename Device::execution_space,
+                                             Kokkos::IndexType<int>>(0, N0),
+                         KOKKOS_LAMBDA(const int& i) { a(i) = i % P; });
     int64_t sum0 = 0;
     Kokkos::parallel_reduce(
         "FillA",

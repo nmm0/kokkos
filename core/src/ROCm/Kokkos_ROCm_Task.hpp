@@ -89,9 +89,8 @@ class TaskQueueSpecialization<Kokkos::Experimental::ROCm> {
     hc::extent<1> flat_extent(1);
     hc::tiled_extent<1> team_extent = flat_extent.tile(1);
 
-    hc::parallel_for_each(
-        team_extent, [&](hc::tiled_index<1> idx)
-                         [[hc]] { *ptr = TaskType::apply; })
+    hc::parallel_for_each(team_extent, [&](hc::tiled_index<1> idx)
+                                           [[hc]] { *ptr = TaskType::apply; })
         .wait();
   }
 };

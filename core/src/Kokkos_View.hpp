@@ -1816,11 +1816,16 @@ class View : public ViewTraits<DataType, Properties...> {
 
   KOKKOS_INLINE_FUNCTION
   View(const View& rhs)
-      : m_track(rhs.m_track, traits::is_managed), m_map(rhs.m_map)
-  {
-#if defined( KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST )
+      : m_track(rhs.m_track, traits::is_managed), m_map(rhs.m_map) {
+#if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+    using specialized_memory_space = typename traits::device_type::memory_space;
+    using shared_record_type =
+        Kokkos::Impl::SharedAllocationRecord<specialized_memory_space, void>;
+
+    // Check for and call view hooks
     Impl::ViewHooksCaller< View >::call( *this );
-    typedef typename traits::device_type::memory_space specialized_memory_space;
+
+    // Check for resilient space and create duplicate.
     if (Kokkos::Impl::is_resilient_space<specialized_memory_space>::value &&
         Kokkos::Impl::SharedAllocationRecord<void,
                                              void>::duplicates_enabled()) {

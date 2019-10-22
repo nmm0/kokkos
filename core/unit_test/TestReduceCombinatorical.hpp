@@ -453,8 +453,8 @@ struct TestReduceCombinatoricalInstantiation {
 
   template <class... Args>
   static void AddLambdaRange(void*, Args... args) {
-    AddReturnArgument(
-        args..., KOKKOS_LAMBDA(const int& i, double& lsum) { lsum += i; });
+    AddReturnArgument(args...,
+                      KOKKOS_LAMBDA(const int& i, double& lsum) { lsum += i; });
   }
 
   template <class... Args>

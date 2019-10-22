@@ -9,15 +9,14 @@ double test_atomic(int L, int N, int M, int K, int R,
   Kokkos::Impl::Timer timer;
 
   for (int r = 0; r < R; r++)
-    Kokkos::parallel_for(
-        L, KOKKOS_LAMBDA(const int& i) {
-          Scalar s = 2;
-          for (int m = 0; m < M; m++) {
-            for (int k = 0; k < K; k++) s = s * s + s;
-            const int idx = (i + offsets(i, m)) % N;
-            Kokkos::atomic_add(&output(idx), s);
-          }
-        });
+    Kokkos::parallel_for(L, KOKKOS_LAMBDA(const int& i) {
+      Scalar s = 2;
+      for (int m = 0; m < M; m++) {
+        for (int k = 0; k < K; k++) s = s * s + s;
+        const int idx = (i + offsets(i, m)) % N;
+        Kokkos::atomic_add(&output(idx), s);
+      }
+    });
   Kokkos::fence();
   double time = timer.seconds();
 
@@ -30,15 +29,14 @@ double test_no_atomic(int L, int N, int M, int K, int R,
   Kokkos::View<Scalar*> output("Output", N);
   Kokkos::Impl::Timer timer;
   for (int r = 0; r < R; r++)
-    Kokkos::parallel_for(
-        L, KOKKOS_LAMBDA(const int& i) {
-          Scalar s = 2;
-          for (int m = 0; m < M; m++) {
-            for (int k = 0; k < K; k++) s = s * s + s;
-            const int idx = (i + offsets(i, m)) % N;
-            output(idx) += s;
-          }
-        });
+    Kokkos::parallel_for(L, KOKKOS_LAMBDA(const int& i) {
+      Scalar s = 2;
+      for (int m = 0; m < M; m++) {
+        for (int k = 0; k < K; k++) s = s * s + s;
+        const int idx = (i + offsets(i, m)) % N;
+        output(idx) += s;
+      }
+    });
   Kokkos::fence();
   double time = timer.seconds();
   return time;

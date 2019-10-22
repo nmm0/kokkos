@@ -2,7 +2,7 @@
 #ifndef __DUPLICATE_TRACKER__
 #define __DUPLICATE_TRACKER__
 
-#include <Kokkos_Macros.hpp>
+#include <Kokkos_Core_fwd.hpp>
 #include <cmath>
 #include <map>
 #include <typeinfo>

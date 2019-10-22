@@ -7,11 +7,10 @@ int main(int argc, char* argv[]) {
     Foo* f_1 = (Foo*)Kokkos::kokkos_malloc(sizeof(Foo_1));
     Foo* f_2 = (Foo*)Kokkos::kokkos_malloc(sizeof(Foo_2));
 
-    Kokkos::parallel_for(
-        "CreateObjects", 1, KOKKOS_LAMBDA(const int&) {
-          new ((Foo_1*)f_1) Foo_1();
-          new ((Foo_2*)f_2) Foo_2();
-        });
+    Kokkos::parallel_for("CreateObjects", 1, KOKKOS_LAMBDA(const int&) {
+      new ((Foo_1*)f_1) Foo_1();
+      new ((Foo_2*)f_2) Foo_2();
+    });
 
     int value_1, value_2;
     Kokkos::parallel_reduce(
@@ -24,11 +23,10 @@ int main(int argc, char* argv[]) {
 
     printf("Values: %i %i\n", value_1, value_2);
 
-    Kokkos::parallel_for(
-        "DestroyObjects", 1, KOKKOS_LAMBDA(const int&) {
-          f_1->~Foo();
-          f_2->~Foo();
-        });
+    Kokkos::parallel_for("DestroyObjects", 1, KOKKOS_LAMBDA(const int&) {
+      f_1->~Foo();
+      f_2->~Foo();
+    });
 
     Kokkos::kokkos_free(f_1);
     Kokkos::kokkos_free(f_2);

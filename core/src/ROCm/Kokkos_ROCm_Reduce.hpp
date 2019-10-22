@@ -115,56 +115,54 @@ void reduce_enqueue(const int szElements,  // size of the extent
   std::vector<T> result_cpu(td.num_tiles * output_length);
   hc::array<T> result(td.num_tiles * output_length);
 
-  auto fut = tile_for<T[]>(
-      td,
-      [ =, &result ](hc::tiled_index<1> t_idx, tile_buffer<T[]> buffer) [[hc]] {
-        const auto local  = t_idx.local[0];
-        const auto global = t_idx.global[0];
-        const auto tile   = t_idx.tile[0];
+  auto fut = tile_for<T[]>(td, [ =, &result ](hc::tiled_index<1> t_idx,
+                                              tile_buffer<T[]> buffer) [[hc]] {
+    const auto local  = t_idx.local[0];
+    const auto global = t_idx.global[0];
+    const auto tile   = t_idx.tile[0];
 
-        buffer.action_at(local, [&](T* state) {
-          ValueInit::init(ReducerConditional::select(f, reducer), state);
-          invoke(make_rocm_invoke_fn<Tag>(f), t_idx, td,
-                 reduce_value(state, std::is_pointer<reference_type>()));
+    buffer.action_at(local, [&](T* state) {
+      ValueInit::init(ReducerConditional::select(f, reducer), state);
+      invoke(make_rocm_invoke_fn<Tag>(f), t_idx, td,
+             reduce_value(state, std::is_pointer<reference_type>()));
+    });
+    t_idx.barrier.wait();
+
+    for (std::size_t s = 1; s < buffer.size(); s *= 2) {
+      const std::size_t index = 2 * s * local;
+      if (index < buffer.size()) {
+        buffer.action_at(index, index + s, [&](T* x, T* y) {
+          ValueJoin::join(ReducerConditional::select(f, reducer), x, y);
         });
-        t_idx.barrier.wait();
+      }
+      t_idx.barrier.wait();
+    }
 
-        for (std::size_t s = 1; s < buffer.size(); s *= 2) {
-          const std::size_t index = 2 * s * local;
-          if (index < buffer.size()) {
-            buffer.action_at(index, index + s, [&](T* x, T* y) {
-              ValueJoin::join(ReducerConditional::select(f, reducer), x, y);
-            });
-          }
-          t_idx.barrier.wait();
-        }
-
-        // Store the tile result in the global memory.
-        if (local == 0) {
+    // Store the tile result in the global memory.
+    if (local == 0) {
 #ifdef KOKKOS_IMPL_ROCM_CLANG_WORKAROUND
-          // Workaround for assigning from LDS memory: std::copy should work
-          // directly
-          buffer.action_at(0, [&](T* x) {
+      // Workaround for assigning from LDS memory: std::copy should work
+      // directly
+      buffer.action_at(0, [&](T* x) {
 #if ROCM15
-            // new ROCM 15 address space changes aren't implemented in std
-            // algorithms yet
-            auto* src = reinterpret_cast<char*>(x);
-            auto* dest =
-                reinterpret_cast<char*>(result.data() + tile * output_length);
-            for (int i = 0; i < sizeof(T) * output_length; i++)
-              dest[i] = src[i];
+        // new ROCM 15 address space changes aren't implemented in std
+        // algorithms yet
+        auto* src = reinterpret_cast<char*>(x);
+        auto* dest =
+            reinterpret_cast<char*>(result.data() + tile * output_length);
+        for (int i = 0; i < sizeof(T) * output_length; i++) dest[i] = src[i];
 #else
               // Workaround: copy_if used to avoid memmove
               std::copy_if(x, x+output_length, result.data()+tile*output_length, always_true{} );
 #endif
-          });
+      });
 #else
-          std::copy(buffer, buffer + output_length,
-                    result.data() + tile * output_length);
+      std::copy(buffer, buffer + output_length,
+                result.data() + tile * output_length);
 
 #endif
-        }
-      });
+    }
+  });
   if (output_result != nullptr)
     ValueInit::init(ReducerConditional::select(f, reducer), output_result);
   fut.wait();

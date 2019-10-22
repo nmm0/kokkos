@@ -322,9 +322,9 @@ struct TestTaskTeam {
     long tot      = 0;
     long expected = (begin + end - 1) * (end - begin) * 0.5;
 
-    Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(member, begin, end),
-        [&](int i, long& res) { res += parfor_result[i]; }, tot);
+    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(member, begin, end),
+                            [&](int i, long& res) { res += parfor_result[i]; },
+                            tot);
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(member, begin, end),
                          [&](int i) { parreduce_check[i] = expected - tot; });
@@ -332,10 +332,9 @@ struct TestTaskTeam {
     // Test parallel_reduce with join.
 
     tot = 0;
-    Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(member, begin, end),
-        [&](int i, long& res) { res += parfor_result[i]; },
-        Kokkos::Sum<long>(tot));
+    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(member, begin, end),
+                            [&](int i, long& res) { res += parfor_result[i]; },
+                            Kokkos::Sum<long>(tot));
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(member, begin, end),
                          [&](int i) { parreduce_check[i] += expected - tot; });

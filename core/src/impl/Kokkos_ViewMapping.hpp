@@ -56,6 +56,7 @@
 #include <impl/Kokkos_Traits.hpp>
 #include <impl/Kokkos_ViewCtor.hpp>
 #include <impl/Kokkos_Atomic_View.hpp>
+#include <impl/Kokkos_FileSpace.hpp>
 #if defined(KOKKOS_ENABLE_PROFILING)
 #include <impl/Kokkos_Profiling_Interface.hpp>
 #endif
