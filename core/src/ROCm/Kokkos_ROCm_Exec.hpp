@@ -212,10 +212,11 @@ struct ROCmParallelLaunch<
       size_t by = (grid.y > block.y) ? block.y : grid.y;
       size_t bz = (grid.z > block.z) ? block.z : grid.z;
 
-      hc::parallel_for_each(ext.tile_with_dynamic(bz, by, bx, shmem), [=
-      ](const hc::index<3> &idx) [[hc]]
+      hc::parallel_for_each(
+          ext.tile_with_dynamic(bz, by, bx, shmem), [=](const hc::index<3> &idx)
+                                                        [[hc]]
 
-                            { rocm_memory_buffer->operator()(); })
+          { rocm_memory_buffer->operator()(); })
           .wait();
       rocm_device_free(rocm_memory_buffer);
 
@@ -248,10 +249,11 @@ struct ROCmParallelLaunch<DriverType, Kokkos::LaunchBounds<>> {
       size_t bx = (grid.x > block.x) ? block.x : grid.x;
       size_t by = (grid.y > block.y) ? block.y : grid.y;
       size_t bz = (grid.z > block.z) ? block.z : grid.z;
-      hc::parallel_for_each(ext.tile_with_dynamic(bz, by, bx, shmem), [=
-      ](const hc::index<3> &idx) [[hc]]
+      hc::parallel_for_each(
+          ext.tile_with_dynamic(bz, by, bx, shmem), [=](const hc::index<3> &idx)
+                                                        [[hc]]
 
-                            { rocm_memory_buffer->operator()(); })
+          { rocm_memory_buffer->operator()(); })
           .wait();
       rocm_device_free(rocm_memory_buffer);
     }

@@ -102,10 +102,11 @@ int main(int argc, char* argv[]) {
   // We also need to protect the usage of a lambda against compiling
   // with a backend which doesn't support it (i.e. Cuda 6.5/7.0).
 #if defined(KOKKOS_ENABLE_CXX11_DISPATCH_LAMBDA)
-  Kokkos::parallel_for(15, KOKKOS_LAMBDA(const int i) {
-    // printf works in a CUDA parallel kernel; std::ostream does not.
-    printf("Hello from i = %i\n", i);
-  });
+  Kokkos::parallel_for(
+      15, KOKKOS_LAMBDA(const int i) {
+        // printf works in a CUDA parallel kernel; std::ostream does not.
+        printf("Hello from i = %i\n", i);
+      });
 #endif
   // You must call finalize() after you are done using Kokkos.
   Kokkos::finalize();

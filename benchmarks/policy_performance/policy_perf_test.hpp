@@ -74,13 +74,13 @@ void test_policy(int team_range, int thread_range, int vector_range,
 
   for (int orep = 0; orep < outer_repeat; orep++) {
     if (test_type == 100) {
-      Kokkos::parallel_for("100 outer for", t_policy(team_range, team_size),
-                           KOKKOS_LAMBDA(const t_team& team) {
-                             long idx = team.league_rank() * team.team_size() +
-                                        team.team_rank();
-                             v1(idx) = idx;
-                             // prevent compiler optimizing loop away
-                           });
+      Kokkos::parallel_for(
+          "100 outer for", t_policy(team_range, team_size),
+          KOKKOS_LAMBDA(const t_team& team) {
+            long idx = team.league_rank() * team.team_size() + team.team_rank();
+            v1(idx)  = idx;
+            // prevent compiler optimizing loop away
+          });
     }
 
     if (test_type == 110) {
@@ -394,11 +394,12 @@ void test_policy(int team_range, int thread_range, int vector_range,
 
     // parallel_for RangePolicy: range = team_size*team_range
     if (test_type == 300) {
-      Kokkos::parallel_for("300 outer for", team_size * team_range,
-                           KOKKOS_LAMBDA(const int idx) {
-                             v1(idx) = idx;
-                             // prevent compiler from optimizing away the loop
-                           });
+      Kokkos::parallel_for(
+          "300 outer for", team_size * team_range,
+          KOKKOS_LAMBDA(const int idx) {
+            v1(idx) = idx;
+            // prevent compiler from optimizing away the loop
+          });
     }
     // parallel_reduce RangePolicy: range = team_size*team_range
     if (test_type == 400) {

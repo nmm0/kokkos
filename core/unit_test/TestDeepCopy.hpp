@@ -21,8 +21,9 @@ struct TestDeepCopy {
     Kokkos::parallel_for(
         "TestDeepCopy: FillA_copy", policyA_t(0, N),
         KOKKOS_LAMBDA(const int& i) { a_char_copy(i) = char(0); });
-    Kokkos::parallel_for("TestDeepCopy: FillB", policyB_t(0, N),
-                         KOKKOS_LAMBDA(const int& i) { b_char(i) = char(0); });
+    Kokkos::parallel_for(
+        "TestDeepCopy: FillB", policyB_t(0, N),
+        KOKKOS_LAMBDA(const int& i) { b_char(i) = char(0); });
   }
 
   static int compare_equal(
@@ -30,11 +31,12 @@ struct TestDeepCopy {
       Kokkos::View<char*, Kokkos::LayoutRight, MemorySpaceA> a_char) {
     const int N = a_char.extent(0);
     int errors;
-    Kokkos::parallel_reduce("TestDeepCopy: FillA_copy", policyA_t(0, N),
-                            KOKKOS_LAMBDA(const int& i, int& lsum) {
-                              if (a_char_copy(i) != a_char(i)) lsum++;
-                            },
-                            errors);
+    Kokkos::parallel_reduce(
+        "TestDeepCopy: FillA_copy", policyA_t(0, N),
+        KOKKOS_LAMBDA(const int& i, int& lsum) {
+          if (a_char_copy(i) != a_char(i)) lsum++;
+        },
+        errors);
     return errors;
   }
 
@@ -51,10 +53,11 @@ struct TestDeepCopy {
     Kokkos::View<char*, Kokkos::LayoutRight, MemorySpaceB> b_char(
         (char*)b_base.data(), b_base.extent(0) * 8);
 
-    Kokkos::parallel_for("TestDeepCopy: FillA", policyA_t(0, a_char.extent(0)),
-                         KOKKOS_LAMBDA(const int& i) {
-                           a_char(i) = static_cast<char>(i % 97) + 1;
-                         });
+    Kokkos::parallel_for(
+        "TestDeepCopy: FillA", policyA_t(0, a_char.extent(0)),
+        KOKKOS_LAMBDA(const int& i) {
+          a_char(i) = static_cast<char>(i % 97) + 1;
+        });
 
     reset_a_copy_and_b(a_char_copy, b_char);
 

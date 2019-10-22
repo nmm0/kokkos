@@ -133,30 +133,32 @@ double AddTestLambda() {
   Kokkos::deep_copy(a, h_a);
 
   if (PWRTest == false) {
-    Kokkos::parallel_for(100, KOKKOS_LAMBDA(const int& i) {
-      b(i, 0) = a(i, 1) + a(i, 2);
-      b(i, 1) = a(i, 0) - a(i, 3);
-      b(i, 2) = a(i, 4) + a(i, 0);
-      b(i, 3) = a(i, 2) - a(i, 1);
-      b(i, 4) = a(i, 3) + a(i, 4);
-    });
+    Kokkos::parallel_for(
+        100, KOKKOS_LAMBDA(const int& i) {
+          b(i, 0) = a(i, 1) + a(i, 2);
+          b(i, 1) = a(i, 0) - a(i, 3);
+          b(i, 2) = a(i, 4) + a(i, 0);
+          b(i, 3) = a(i, 2) - a(i, 1);
+          b(i, 4) = a(i, 3) + a(i, 4);
+        });
   } else {
     typedef Kokkos::TeamPolicy<DeviceType> policy_type;
     typedef typename policy_type::member_type team_member;
 
     policy_type policy(25, Kokkos::AUTO);
 
-    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const team_member& dev) {
-      const int begin = dev.league_rank() * 4;
-      const int end   = begin + 4;
-      for (int i = begin + dev.team_rank(); i < end; i += dev.team_size()) {
-        b(i, 0) = a(i, 1) + a(i, 2);
-        b(i, 1) = a(i, 0) - a(i, 3);
-        b(i, 2) = a(i, 4) + a(i, 0);
-        b(i, 3) = a(i, 2) - a(i, 1);
-        b(i, 4) = a(i, 3) + a(i, 4);
-      }
-    });
+    Kokkos::parallel_for(
+        policy, KOKKOS_LAMBDA(const team_member& dev) {
+          const int begin = dev.league_rank() * 4;
+          const int end   = begin + 4;
+          for (int i = begin + dev.team_rank(); i < end; i += dev.team_size()) {
+            b(i, 0) = a(i, 1) + a(i, 2);
+            b(i, 1) = a(i, 0) - a(i, 3);
+            b(i, 2) = a(i, 4) + a(i, 0);
+            b(i, 3) = a(i, 2) - a(i, 1);
+            b(i, 4) = a(i, 3) + a(i, 4);
+          }
+        });
   }
   Kokkos::deep_copy(h_b, b);
 
@@ -271,31 +273,32 @@ double ReduceTestLambda() {
   double result = 0.0;
 
   if (PWRTest == false) {
-    Kokkos::parallel_reduce(100,
-                            KOKKOS_LAMBDA(const int& i, double& sum) {
-                              sum += a(i, 1) + a(i, 2);
-                              sum += a(i, 0) - a(i, 3);
-                              sum += a(i, 4) + a(i, 0);
-                              sum += a(i, 2) - a(i, 1);
-                              sum += a(i, 3) + a(i, 4);
-                            },
-                            unmanaged_result(&result));
+    Kokkos::parallel_reduce(
+        100,
+        KOKKOS_LAMBDA(const int& i, double& sum) {
+          sum += a(i, 1) + a(i, 2);
+          sum += a(i, 0) - a(i, 3);
+          sum += a(i, 4) + a(i, 0);
+          sum += a(i, 2) - a(i, 1);
+          sum += a(i, 3) + a(i, 4);
+        },
+        unmanaged_result(&result));
   } else {
     typedef typename policy_type::member_type team_member;
-    Kokkos::parallel_reduce(policy_type(25, Kokkos::AUTO),
-                            KOKKOS_LAMBDA(const team_member& dev, double& sum) {
-                              const int begin = dev.league_rank() * 4;
-                              const int end   = begin + 4;
-                              for (int i = begin + dev.team_rank(); i < end;
-                                   i += dev.team_size()) {
-                                sum += a(i, 1) + a(i, 2);
-                                sum += a(i, 0) - a(i, 3);
-                                sum += a(i, 4) + a(i, 0);
-                                sum += a(i, 2) - a(i, 1);
-                                sum += a(i, 3) + a(i, 4);
-                              }
-                            },
-                            unmanaged_result(&result));
+    Kokkos::parallel_reduce(
+        policy_type(25, Kokkos::AUTO),
+        KOKKOS_LAMBDA(const team_member& dev, double& sum) {
+          const int begin = dev.league_rank() * 4;
+          const int end   = begin + 4;
+          for (int i = begin + dev.team_rank(); i < end; i += dev.team_size()) {
+            sum += a(i, 1) + a(i, 2);
+            sum += a(i, 0) - a(i, 3);
+            sum += a(i, 4) + a(i, 0);
+            sum += a(i, 2) - a(i, 1);
+            sum += a(i, 3) + a(i, 4);
+          }
+        },
+        unmanaged_result(&result));
   }
   Kokkos::fence();
 

@@ -87,7 +87,8 @@ void run_fillview_tests123(int N, int R) {
     double* a_ptr = a.data();
     Kokkos::Timer timer;
     for (int r = 0; r < R; r++) {
-      Kokkos::parallel_for(N8, KOKKOS_LAMBDA(const int& i) { a_ptr[i] = 1.1; });
+      Kokkos::parallel_for(
+          N8, KOKKOS_LAMBDA(const int& i) { a_ptr[i] = 1.1; });
     }
     Kokkos::fence();
     time_raw = timer.seconds() / R;
@@ -126,7 +127,8 @@ void run_fillview_tests45(int N, int R) {
     double* a_ptr = a.data();
     Kokkos::Timer timer;
     for (int r = 0; r < R; r++) {
-      Kokkos::parallel_for(N8, KOKKOS_LAMBDA(const int& i) { a_ptr[i] = 1.1; });
+      Kokkos::parallel_for(
+          N8, KOKKOS_LAMBDA(const int& i) { a_ptr[i] = 1.1; });
     }
     Kokkos::fence();
     time_raw = timer.seconds() / R;
@@ -159,7 +161,8 @@ void run_fillview_tests6(int N, int R) {
     double* a_ptr = a.data();
     Kokkos::Timer timer;
     for (int r = 0; r < R; r++) {
-      Kokkos::parallel_for(N8, KOKKOS_LAMBDA(const int& i) { a_ptr[i] = 1.1; });
+      Kokkos::parallel_for(
+          N8, KOKKOS_LAMBDA(const int& i) { a_ptr[i] = 1.1; });
     }
     Kokkos::fence();
     time_raw = timer.seconds() / R;
@@ -190,7 +193,8 @@ void run_fillview_tests7(int N, int R) {
     double* a_ptr = a.data();
     Kokkos::Timer timer;
     for (int r = 0; r < R; r++) {
-      Kokkos::parallel_for(N8, KOKKOS_LAMBDA(const int& i) { a_ptr[i] = 1.1; });
+      Kokkos::parallel_for(
+          N8, KOKKOS_LAMBDA(const int& i) { a_ptr[i] = 1.1; });
     }
     Kokkos::fence();
     time_raw = timer.seconds() / R;
@@ -222,7 +226,8 @@ void run_fillview_tests8(int N, int R) {
     double* a_ptr = a.data();
     Kokkos::Timer timer;
     for (int r = 0; r < R; r++) {
-      Kokkos::parallel_for(N8, KOKKOS_LAMBDA(const int& i) { a_ptr[i] = 1.1; });
+      Kokkos::parallel_for(
+          N8, KOKKOS_LAMBDA(const int& i) { a_ptr[i] = 1.1; });
     }
     Kokkos::fence();
     time_raw = timer.seconds() / R;

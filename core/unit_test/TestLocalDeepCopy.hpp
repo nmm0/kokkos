@@ -704,14 +704,16 @@ void impl_test_local_deepcopy_rangepolicy_rank_4(const int N) {
   Kokkos::deep_copy(subA, 10.0);
 
   // Deep Copy
-  Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, N), KOKKOS_LAMBDA(
-                                                                 const int& i) {
-    auto subSrc = Kokkos::subview(A, 1, 1, 1, i, Kokkos::ALL(), Kokkos::ALL(),
-                                  Kokkos::ALL(), Kokkos::ALL());
-    auto subDst = Kokkos::subview(B, 1, 1, 1, i, Kokkos::ALL(), Kokkos::ALL(),
-                                  Kokkos::ALL(), Kokkos::ALL());
-    Kokkos::Experimental::local_deep_copy(subDst, subSrc);
-  });
+  Kokkos::parallel_for(
+      Kokkos::RangePolicy<ExecSpace>(0, N), KOKKOS_LAMBDA(const int& i) {
+        auto subSrc =
+            Kokkos::subview(A, 1, 1, 1, i, Kokkos::ALL(), Kokkos::ALL(),
+                            Kokkos::ALL(), Kokkos::ALL());
+        auto subDst =
+            Kokkos::subview(B, 1, 1, 1, i, Kokkos::ALL(), Kokkos::ALL(),
+                            Kokkos::ALL(), Kokkos::ALL());
+        Kokkos::Experimental::local_deep_copy(subDst, subSrc);
+      });
 
   Kokkos::deep_copy(h_A, A);
   Kokkos::deep_copy(h_B, B);
@@ -764,14 +766,16 @@ void impl_test_local_deepcopy_rangepolicy_rank_5(const int N) {
   Kokkos::deep_copy(subA, 10.0);
 
   // Deep Copy
-  Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, N), KOKKOS_LAMBDA(
-                                                                 const int& i) {
-    auto subSrc = Kokkos::subview(A, 1, 1, i, Kokkos::ALL(), Kokkos::ALL(),
-                                  Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
-    auto subDst = Kokkos::subview(B, 1, 1, i, Kokkos::ALL(), Kokkos::ALL(),
-                                  Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
-    Kokkos::Experimental::local_deep_copy(subDst, subSrc);
-  });
+  Kokkos::parallel_for(
+      Kokkos::RangePolicy<ExecSpace>(0, N), KOKKOS_LAMBDA(const int& i) {
+        auto subSrc =
+            Kokkos::subview(A, 1, 1, i, Kokkos::ALL(), Kokkos::ALL(),
+                            Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
+        auto subDst =
+            Kokkos::subview(B, 1, 1, i, Kokkos::ALL(), Kokkos::ALL(),
+                            Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
+        Kokkos::Experimental::local_deep_copy(subDst, subSrc);
+      });
 
   Kokkos::deep_copy(h_A, A);
   Kokkos::deep_copy(h_B, B);

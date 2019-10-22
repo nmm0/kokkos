@@ -92,8 +92,8 @@ void test_offsetview_construction() {
 
     Kokkos::RangePolicy<Device, int> rangePolicy1(offsetV1.begin(0),
                                                   offsetV1.end(0));
-    Kokkos::parallel_for(rangePolicy1,
-                         KOKKOS_LAMBDA(const int i) { offsetV1(i) = 1; });
+    Kokkos::parallel_for(
+        rangePolicy1, KOKKOS_LAMBDA(const int i) { offsetV1(i) = 1; });
     Kokkos::fence();
 
     int OVResult = 0;
@@ -130,9 +130,9 @@ void test_offsetview_construction() {
                            point_type{{ovend0, ovend1}});
 
   const int constValue = 9;
-  Kokkos::parallel_for(rangePolicy2D, KOKKOS_LAMBDA(const int i, const int j) {
-    ov(i, j) = constValue;
-  });
+  Kokkos::parallel_for(
+      rangePolicy2D,
+      KOKKOS_LAMBDA(const int i, const int j) { ov(i, j) = constValue; });
 
   // test offsetview to offsetviewmirror deep copy
   typename offset_view_type::HostMirror hostOffsetView =
@@ -460,9 +460,9 @@ void test_offsetview_subview() {
 
       range_type rangeP2D(point_type{{b0, b1}}, point_type{{e0, e1}});
 
-      Kokkos::parallel_for(rangeP2D, KOKKOS_LAMBDA(const int i, const int j) {
-        offsetSubview(i, j) = 6;
-      });
+      Kokkos::parallel_for(
+          rangeP2D,
+          KOKKOS_LAMBDA(const int i, const int j) { offsetSubview(i, j) = 6; });
 
       int sum = 0;
       Kokkos::parallel_reduce(
@@ -594,16 +594,18 @@ void test_offsetview_offsets_rank1() {
   using offset_view_type = Kokkos::Experimental::OffsetView<data_type, DEVICE>;
 
   view_type v("View1", 10);
-  Kokkos::parallel_for("For1", execution_policy(0, v.extent_int(0)),
-                       KOKKOS_LAMBDA(const int i) { v(i) = element({i}); });
+  Kokkos::parallel_for(
+      "For1", execution_policy(0, v.extent_int(0)),
+      KOKKOS_LAMBDA(const int i) { v(i) = element({i}); });
 
   int errors;
-  Kokkos::parallel_reduce("Reduce1", execution_policy(-3, 4),
-                          KOKKOS_LAMBDA(const int ii, int& lerrors) {
-                            offset_view_type ov(v, {ii});
-                            lerrors += (ov(3) != element({3 - ii}));
-                          },
-                          errors);
+  Kokkos::parallel_reduce(
+      "Reduce1", execution_policy(-3, 4),
+      KOKKOS_LAMBDA(const int ii, int& lerrors) {
+        offset_view_type ov(v, {ii});
+        lerrors += (ov(3) != element({3 - ii}));
+      },
+      errors);
 
   ASSERT_EQ(0, errors);
 }
@@ -617,12 +619,12 @@ void test_offsetview_offsets_rank2() {
   using offset_view_type = Kokkos::Experimental::OffsetView<data_type, DEVICE>;
 
   view_type v("View2", 10, 10);
-  Kokkos::parallel_for("For2", execution_policy(0, v.extent_int(0)),
-                       KOKKOS_LAMBDA(const int i) {
-                         for (int j = 0; j != v.extent_int(1); ++j) {
-                           v(i, j) = element({i, j});
-                         }
-                       });
+  Kokkos::parallel_for(
+      "For2", execution_policy(0, v.extent_int(0)), KOKKOS_LAMBDA(const int i) {
+        for (int j = 0; j != v.extent_int(1); ++j) {
+          v(i, j) = element({i, j});
+        }
+      });
 
   int errors;
   Kokkos::parallel_reduce(
@@ -647,14 +649,14 @@ void test_offsetview_offsets_rank3() {
   using offset_view_type = Kokkos::Experimental::OffsetView<data_type, DEVICE>;
 
   view_type v("View3", 10, 10, 10);
-  Kokkos::parallel_for("For3", execution_policy(0, v.extent_int(0)),
-                       KOKKOS_LAMBDA(const int i) {
-                         for (int j = 0; j != v.extent_int(1); ++j) {
-                           for (int k = 0; k != v.extent_int(2); ++k) {
-                             v(i, j, k) = element({i, j, k});
-                           }
-                         }
-                       });
+  Kokkos::parallel_for(
+      "For3", execution_policy(0, v.extent_int(0)), KOKKOS_LAMBDA(const int i) {
+        for (int j = 0; j != v.extent_int(1); ++j) {
+          for (int k = 0; k != v.extent_int(2); ++k) {
+            v(i, j, k) = element({i, j, k});
+          }
+        }
+      });
 
   int errors;
   Kokkos::parallel_reduce(

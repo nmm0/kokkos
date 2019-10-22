@@ -64,60 +64,61 @@ void scan_enqueue(const int len, const F& f, TransformIndex transform_index) {
   hc::array<value_type> result(td.num_tiles);
   hc::array<value_type> scratch(len);
 
-  tile_for<value_type>(td, [&, f, len,
-                            td ](hc::tiled_index<1> t_idx,
-                                 tile_buffer<value_type> buffer) [[hc]] {
-    const auto local  = t_idx.local[0];
-    const auto global = t_idx.global[0];
-    const auto tile   = t_idx.tile[0];
+  tile_for<value_type>(
+      td, [&, f, len, td ](hc::tiled_index<1> t_idx,
+                           tile_buffer<value_type> buffer) [[hc]] {
+        const auto local  = t_idx.local[0];
+        const auto global = t_idx.global[0];
+        const auto tile   = t_idx.tile[0];
 
-    // Join tile buffer elements
-    const auto join = [&](std::size_t i, std::size_t j) {
-      buffer.action_at(i, j, [&](value_type& x, const value_type& y) {
-        ValueJoin::join(f, &x, &y);
-      });
-    };
+        // Join tile buffer elements
+        const auto join = [&](std::size_t i, std::size_t j) {
+          buffer.action_at(i, j, [&](value_type& x, const value_type& y) {
+            ValueJoin::join(f, &x, &y);
+          });
+        };
 
-    // Copy into tile
-    buffer.action_at(local, [&](value_type& state) {
-      ValueInit::init(f, &state);
-      if (global < len)
-        rocm_invoke<Tag>(f, transform_index(t_idx, td.tile_size, td.num_tiles),
-                         state, false);
-    });
-    t_idx.barrier.wait();
-    // Up sweep phase
-    for (std::size_t d = 1; d < buffer.size(); d *= 2) {
-      auto d2 = 2 * d;
-      auto i  = local * d2;
-      if (i < len) {
-        auto j = i + d - 1;
-        auto k = i + d2 - 1;
+        // Copy into tile
+        buffer.action_at(local, [&](value_type& state) {
+          ValueInit::init(f, &state);
+          if (global < len)
+            rocm_invoke<Tag>(f,
+                             transform_index(t_idx, td.tile_size, td.num_tiles),
+                             state, false);
+        });
+        t_idx.barrier.wait();
+        // Up sweep phase
+        for (std::size_t d = 1; d < buffer.size(); d *= 2) {
+          auto d2 = 2 * d;
+          auto i  = local * d2;
+          if (i < len) {
+            auto j = i + d - 1;
+            auto k = i + d2 - 1;
 
-        ValueJoin::join(f, &buffer[k], &buffer[j]);
-      }
-    }
-    t_idx.barrier.wait();
+            ValueJoin::join(f, &buffer[k], &buffer[j]);
+          }
+        }
+        t_idx.barrier.wait();
 
-    result[tile]              = buffer[buffer.size() - 1];
-    buffer[buffer.size() - 1] = 0;
-    // Down sweep phase
-    for (std::size_t d = buffer.size() / 2; d > 0; d /= 2) {
-      auto d2 = 2 * d;
-      auto i  = local * d2;
-      if (i < len) {
-        auto j = i + d - 1;
-        auto k = i + d2 - 1;
-        auto t = buffer[k];
+        result[tile]              = buffer[buffer.size() - 1];
+        buffer[buffer.size() - 1] = 0;
+        // Down sweep phase
+        for (std::size_t d = buffer.size() / 2; d > 0; d /= 2) {
+          auto d2 = 2 * d;
+          auto i  = local * d2;
+          if (i < len) {
+            auto j = i + d - 1;
+            auto k = i + d2 - 1;
+            auto t = buffer[k];
 
-        ValueJoin::join(f, &buffer[k], &buffer[j]);
-        buffer[j] = t;
-      }
-      t_idx.barrier.wait();
-    }
-    // Copy tiles into global memory
-    if (global < len) scratch[global] = buffer[local];
-  })
+            ValueJoin::join(f, &buffer[k], &buffer[j]);
+            buffer[j] = t;
+          }
+          t_idx.barrier.wait();
+        }
+        // Copy tiles into global memory
+        if (global < len) scratch[global] = buffer[local];
+      })
       .wait();
   copy(result, result_cpu.data());
 
@@ -163,58 +164,59 @@ void scan_enqueue(const int len, const F& f, ReturnType& return_val,
   std::vector<ReturnType> total_cpu(1);
   hc::array<ReturnType> total(1);
 
-  tile_for<value_type>(td, [&, f, len,
-                            td ](hc::tiled_index<1> t_idx,
-                                 tile_buffer<value_type> buffer) [[hc]] {
-    const auto local  = t_idx.local[0];
-    const auto global = t_idx.global[0];
-    const auto tile   = t_idx.tile[0];
+  tile_for<value_type>(
+      td, [&, f, len, td ](hc::tiled_index<1> t_idx,
+                           tile_buffer<value_type> buffer) [[hc]] {
+        const auto local  = t_idx.local[0];
+        const auto global = t_idx.global[0];
+        const auto tile   = t_idx.tile[0];
 
-    // Join tile buffer elements
-    const auto join = [&](std::size_t i, std::size_t j) {
-      buffer.action_at(i, j, [&](value_type& x, const value_type& y) {
-        ValueJoin::join(f, &x, &y);
-      });
-    };
+        // Join tile buffer elements
+        const auto join = [&](std::size_t i, std::size_t j) {
+          buffer.action_at(i, j, [&](value_type& x, const value_type& y) {
+            ValueJoin::join(f, &x, &y);
+          });
+        };
 
-    // Copy into tile
-    buffer.action_at(local, [&](value_type& state) {
-      ValueInit::init(f, &state);
-      if (global < len)
-        rocm_invoke<Tag>(f, transform_index(t_idx, td.tile_size, td.num_tiles),
-                         state, false);
-    });
-    t_idx.barrier.wait();
-    // Up sweep phase
-    for (std::size_t d = 1; d < buffer.size(); d *= 2) {
-      auto d2 = 2 * d;
-      auto i  = local * d2;
-      if (i < len) {
-        auto j = i + d - 1;
-        auto k = i + d2 - 1;
-        ValueJoin::join(f, &buffer[k], &buffer[j]);
-      }
-    }
-    t_idx.barrier.wait();
+        // Copy into tile
+        buffer.action_at(local, [&](value_type& state) {
+          ValueInit::init(f, &state);
+          if (global < len)
+            rocm_invoke<Tag>(f,
+                             transform_index(t_idx, td.tile_size, td.num_tiles),
+                             state, false);
+        });
+        t_idx.barrier.wait();
+        // Up sweep phase
+        for (std::size_t d = 1; d < buffer.size(); d *= 2) {
+          auto d2 = 2 * d;
+          auto i  = local * d2;
+          if (i < len) {
+            auto j = i + d - 1;
+            auto k = i + d2 - 1;
+            ValueJoin::join(f, &buffer[k], &buffer[j]);
+          }
+        }
+        t_idx.barrier.wait();
 
-    result[tile]              = buffer[buffer.size() - 1];
-    buffer[buffer.size() - 1] = 0;
-    // Down sweep phase
-    for (std::size_t d = buffer.size() / 2; d > 0; d /= 2) {
-      auto d2 = 2 * d;
-      auto i  = local * d2;
-      if (i < len) {
-        auto j = i + d - 1;
-        auto k = i + d2 - 1;
-        auto t = buffer[k];
-        ValueJoin::join(f, &buffer[k], &buffer[j]);
-        buffer[j] = t;
-      }
-      t_idx.barrier.wait();
-    }
-    // Copy tiles into global memory
-    if (global < len) scratch[global] = buffer[local];
-  })
+        result[tile]              = buffer[buffer.size() - 1];
+        buffer[buffer.size() - 1] = 0;
+        // Down sweep phase
+        for (std::size_t d = buffer.size() / 2; d > 0; d /= 2) {
+          auto d2 = 2 * d;
+          auto i  = local * d2;
+          if (i < len) {
+            auto j = i + d - 1;
+            auto k = i + d2 - 1;
+            auto t = buffer[k];
+            ValueJoin::join(f, &buffer[k], &buffer[j]);
+            buffer[j] = t;
+          }
+          t_idx.barrier.wait();
+        }
+        // Copy tiles into global memory
+        if (global < len) scratch[global] = buffer[local];
+      })
       .wait();
   copy(result, result_cpu.data());
 

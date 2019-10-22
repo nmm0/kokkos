@@ -111,22 +111,23 @@ struct SomeCorrelation {
     // The team reduction value is again broadcast to every team member (and
     // every vector lane)
     int team_sum = 0;
-    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(thread, data.extent(1) - 1),
-                            [=](const int& j, int& thread_sum) {
-                              // It is not valid to directly add to thread_sum
-                              // Use a single function with broadcast instead
-                              // team_sum will be used as input to the operator
-                              // (i.e. it is used to initialize sum) the end
-                              // value of sum will be broadcast to all vector
-                              // lanes in the thread.
-                              Kokkos::single(Kokkos::PerThread(thread),
-                                             [=](int& sum) {
-                                               if (count(j) == count(j + 1))
-                                                 sum++;
-                                             },
-                                             thread_sum);
-                            },
-                            team_sum);
+    Kokkos::parallel_reduce(
+        Kokkos::TeamThreadRange(thread, data.extent(1) - 1),
+        [=](const int& j, int& thread_sum) {
+          // It is not valid to directly add to thread_sum
+          // Use a single function with broadcast instead
+          // team_sum will be used as input to the operator
+          // (i.e. it is used to initialize sum) the end
+          // value of sum will be broadcast to all vector
+          // lanes in the thread.
+          Kokkos::single(
+              Kokkos::PerThread(thread),
+              [=](int& sum) {
+                if (count(j) == count(j + 1)) sum++;
+              },
+              thread_sum);
+        },
+        team_sum);
 
     // Add with one thread and vectorlane of the team the team_sum to the global
     // value

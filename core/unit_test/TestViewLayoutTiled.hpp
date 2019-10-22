@@ -150,16 +150,17 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0}, {NT0, NT1}, {T0, T1});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 2 LL", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int ti, const int tj) {
-                             for (int j = 0; j < T1; ++j) {
-                               for (int i = 0; i < T0; ++i) {
-                                 if ((ti * T0 + i < N0) && (tj * T1 + j < N1)) {
-                                   v(ti * T0 + i, tj * T1 + j) += 1;
-                                 }
-                               }
-                             }
-                           });
+      Kokkos::parallel_for(
+          "ViewTile rank 2 LL", mdrangepolicy,
+          KOKKOS_LAMBDA(const int ti, const int tj) {
+            for (int j = 0; j < T1; ++j) {
+              for (int i = 0; i < T0; ++i) {
+                if ((ti * T0 + i < N0) && (tj * T1 + j < N1)) {
+                  v(ti * T0 + i, tj * T1 + j) += 1;
+                }
+              }
+            }
+          });
 
       Kokkos::deep_copy(hv, v);
 
@@ -214,16 +215,17 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0}, {NT0, NT1}, {T0, T1});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 2 RL", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int ti, const int tj) {
-                             for (int j = 0; j < T1; ++j) {
-                               for (int i = 0; i < T0; ++i) {
-                                 if ((ti * T0 + i < N0) && (tj * T1 + j < N1)) {
-                                   v(ti * T0 + i, tj * T1 + j) += 1;
-                                 }
-                               }
-                             }
-                           });
+      Kokkos::parallel_for(
+          "ViewTile rank 2 RL", mdrangepolicy,
+          KOKKOS_LAMBDA(const int ti, const int tj) {
+            for (int j = 0; j < T1; ++j) {
+              for (int i = 0; i < T0; ++i) {
+                if ((ti * T0 + i < N0) && (tj * T1 + j < N1)) {
+                  v(ti * T0 + i, tj * T1 + j) += 1;
+                }
+              }
+            }
+          });
 
       Kokkos::deep_copy(hv, v);
 
@@ -279,16 +281,17 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0}, {NT0, NT1}, {T0, T1});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 2 LR", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int ti, const int tj) {
-                             for (int j = 0; j < T1; ++j) {
-                               for (int i = 0; i < T0; ++i) {
-                                 if ((ti * T0 + i < N0) && (tj * T1 + j < N1)) {
-                                   v(ti * T0 + i, tj * T1 + j) += 1;
-                                 }
-                               }
-                             }
-                           });
+      Kokkos::parallel_for(
+          "ViewTile rank 2 LR", mdrangepolicy,
+          KOKKOS_LAMBDA(const int ti, const int tj) {
+            for (int j = 0; j < T1; ++j) {
+              for (int i = 0; i < T0; ++i) {
+                if ((ti * T0 + i < N0) && (tj * T1 + j < N1)) {
+                  v(ti * T0 + i, tj * T1 + j) += 1;
+                }
+              }
+            }
+          });
 
       Kokkos::deep_copy(hv, v);
 
@@ -344,16 +347,17 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0}, {NT0, NT1}, {T0, T1});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 2 LR", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int ti, const int tj) {
-                             for (int j = 0; j < T1; ++j) {
-                               for (int i = 0; i < T0; ++i) {
-                                 if ((ti * T0 + i < N0) && (tj * T1 + j < N1)) {
-                                   v(ti * T0 + i, tj * T1 + j) += 1;
-                                 }
-                               }
-                             }
-                           });
+      Kokkos::parallel_for(
+          "ViewTile rank 2 LR", mdrangepolicy,
+          KOKKOS_LAMBDA(const int ti, const int tj) {
+            for (int j = 0; j < T1; ++j) {
+              for (int i = 0; i < T0; ++i) {
+                if ((ti * T0 + i < N0) && (tj * T1 + j < N1)) {
+                  v(ti * T0 + i, tj * T1 + j) += 1;
+                }
+              }
+            }
+          });
 
       Kokkos::deep_copy(hv, v);
 
@@ -427,9 +431,11 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0, 0}, {N0, N1, N2}, {T0, T1, T2});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 3 LL", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int i, const int j,
-                                         const int k) { dv(i, j, k) += 1; });
+      Kokkos::parallel_for(
+          "ViewTile rank 3 LL", mdrangepolicy,
+          KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            dv(i, j, k) += 1;
+          });
 
       Kokkos::deep_copy(v, dv);
 
@@ -496,9 +502,11 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0, 0}, {N0, N1, N2}, {T0, T1, T2});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 3 RL", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int i, const int j,
-                                         const int k) { dv(i, j, k) += 1; });
+      Kokkos::parallel_for(
+          "ViewTile rank 3 RL", mdrangepolicy,
+          KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            dv(i, j, k) += 1;
+          });
 
       Kokkos::deep_copy(v, dv);
 
@@ -565,9 +573,11 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0, 0}, {N0, N1, N2}, {T0, T1, T2});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 3 LR", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int i, const int j,
-                                         const int k) { dv(i, j, k) += 1; });
+      Kokkos::parallel_for(
+          "ViewTile rank 3 LR", mdrangepolicy,
+          KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            dv(i, j, k) += 1;
+          });
 
       Kokkos::deep_copy(v, dv);
 
@@ -634,9 +644,11 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0, 0}, {N0, N1, N2}, {T0, T1, T2});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 3 RR", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int i, const int j,
-                                         const int k) { dv(i, j, k) += 1; });
+      Kokkos::parallel_for(
+          "ViewTile rank 3 RR", mdrangepolicy,
+          KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            dv(i, j, k) += 1;
+          });
 
       Kokkos::deep_copy(v, dv);
 
@@ -723,9 +735,11 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0, 0, 0}, {N0, N1, N2, N3}, {T0, T1, T2, T3});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 4 LL", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int i, const int j, const int k,
-                                         const int l) { dv(i, j, k, l) += 1; });
+      Kokkos::parallel_for(
+          "ViewTile rank 4 LL", mdrangepolicy,
+          KOKKOS_LAMBDA(const int i, const int j, const int k, const int l) {
+            dv(i, j, k, l) += 1;
+          });
 
       Kokkos::deep_copy(v, dv);
 
@@ -803,9 +817,11 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0, 0, 0}, {N0, N1, N2, N3}, {T0, T1, T2, T3});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 4 RL", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int i, const int j, const int k,
-                                         const int l) { dv(i, j, k, l) += 1; });
+      Kokkos::parallel_for(
+          "ViewTile rank 4 RL", mdrangepolicy,
+          KOKKOS_LAMBDA(const int i, const int j, const int k, const int l) {
+            dv(i, j, k, l) += 1;
+          });
 
       Kokkos::deep_copy(v, dv);
 
@@ -885,9 +901,11 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0, 0, 0}, {N0, N1, N2, N3}, {T0, T1, T2, T3});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 4 LR", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int i, const int j, const int k,
-                                         const int l) { dv(i, j, k, l) += 1; });
+      Kokkos::parallel_for(
+          "ViewTile rank 4 LR", mdrangepolicy,
+          KOKKOS_LAMBDA(const int i, const int j, const int k, const int l) {
+            dv(i, j, k, l) += 1;
+          });
 
       Kokkos::deep_copy(v, dv);
 
@@ -967,9 +985,11 @@ struct TestViewLayoutTiled {
           mdrangepolicy({0, 0, 0, 0}, {N0, N1, N2, N3}, {T0, T1, T2, T3});
 
       // iterate by tile
-      Kokkos::parallel_for("ViewTile rank 4 RR", mdrangepolicy,
-                           KOKKOS_LAMBDA(const int i, const int j, const int k,
-                                         const int l) { dv(i, j, k, l) += 1; });
+      Kokkos::parallel_for(
+          "ViewTile rank 4 RR", mdrangepolicy,
+          KOKKOS_LAMBDA(const int i, const int j, const int k, const int l) {
+            dv(i, j, k, l) += 1;
+          });
 
       Kokkos::deep_copy(v, dv);
 
