@@ -79,7 +79,7 @@ class DuplicateTracker {
     if (dup_cnt < 3) {
       dup_list[dup_cnt] = (void*)dup->data();
       dup_cnt++;
-      printf("duplicate added to list: %d\n", dup_cnt);
+      //printf("duplicate added to list: %d\n", dup_cnt);
     }
   }
 
@@ -122,24 +122,24 @@ class CombineFunctor {
   KOKKOS_INLINE_FUNCTION
   // void operator ()(const int i) const {
   void exec(const int i) const {
-    printf("combine dups: %d\n", i);
+    //printf("combine dups: %d\n", i);
     for (int j = 0; j < 3; j++) {
-      printf("iterating outer: %d - %d \n", i, j);
+      //printf("iterating outer: %d - %d \n", i, j);
       orig_view[i] = dup_view[j][i];
-      printf("first entry: %d, %d\n", j, orig_view[i]);
+      //printf("first entry: %d, %d\n", j, orig_view[i]);
       int k = j < 2 ? j + 1 : 0;
       for (int r = 0; r < 2; r++) {
-        printf("iterate inner %d, %d, %d \n", i, j, k);
+        //printf("iterate inner %d, %d, %d \n", i, j, k);
         if (cf.compare(dup_view[k][i],
                        orig_view[i]))  // just need 2 that are the same
         {
-          printf("match found: %d - %d\n", i, j);
+         // printf("match found: %d - %d\n", i, j);
           return;
         }
         k = k < 2 ? k + 1 : 0;
       }
     }
-    printf("no match found: %i\n", i);
+    // printf("no match found: %i\n", i);
   }
 };
 
@@ -179,8 +179,8 @@ static void track_duplicate(
   auto loc    = MemorySpace::duplicate_map.find(SP->get_label());
   if (loc != MemorySpace::duplicate_map.end()) {
     dt = (dt_type*)loc->second;
-    printf("retrieved existing tracking entry from map: %s\n",
-           SP->get_label().c_str());
+   // printf("retrieved existing tracking entry from map: %s\n",
+   //        SP->get_label().c_str());
   } else {
     dt = new dt_type();
     // printf("dup_kernel ptr = %08x \n", comb_type::s_dup_kernel);
@@ -190,8 +190,8 @@ static void track_duplicate(
     dt->original_data = orig->data();
     MemorySpace::duplicate_map[SP->get_label()] =
         static_cast<Kokkos::Experimental::DuplicateTracker*>(dt);
-    printf("creating new tracking entry in hash map: %s, %08x \n",
-           SP->get_label().c_str(), (unsigned long)dt->func_ptr);
+    //printf("creating new tracking entry in hash map: %s, %08x \n",
+    //       SP->get_label().c_str(), (unsigned long)dt->func_ptr);
   }
   dt->add_dup(dup);
 }
