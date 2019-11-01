@@ -149,6 +149,94 @@ void runtime_check_rank_host(const size_t, const bool, const size_t,
 #endif
 #endif
 
+template<class View, class Enabled = void>
+struct ViewTracker;
+
+// const view
+template<class View>
+struct ViewTracker<View, typename std::enable_if< std::is_const<View>::value, void >::type > {
+  typedef Kokkos::Impl::SharedAllocationTracker track_type;
+  typedef typename View::traits view_traits;
+
+  track_type m_tracker;
+
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker(  ) : m_tracker() { }
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker( const ViewTracker & vt ) : m_tracker(vt.m_tracker,view_traits::is_managed) { 
+  #if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+     if (Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled()) {
+        printf("const copy from view tracker (likely same view type)\n");
+     }
+  #endif
+  }
+//  KOKKOS_INLINE_FUNCTION
+//  ViewTracker( ViewTracker && vt ) : m_tracker(std::move(vt.m_tracker)) { }
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker( const track_type & tt ) : m_tracker(tt,view_traits::is_managed) { 
+  #if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+     if (Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled()) {
+        printf("const copy from tracker directly (likely different view type)\n");
+     }
+  #endif
+  }
+
+};
+
+// non const view
+template<class View>
+struct ViewTracker<View, typename std::enable_if< ! std::is_const<View>::value, void >::type > {
+  typedef Kokkos::Impl::SharedAllocationTracker track_type;
+  typedef typename View::traits view_traits;
+
+  track_type m_tracker;
+
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker(  ) : m_tracker() { }
+
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker( const ViewTracker & vt ) : m_tracker(vt.m_tracker,view_traits::is_managed) {
+  #if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+     if (Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled()) {
+        std::string sName = m_tracker.template get_label<typename view_traits::memory_space>();
+        printf("non-const copy from view tracker: %s, %d (%s-%s) %d \n", sName.c_str(), sizeof(*this),
+              view_traits::is_managed ? "managed" : "unmanaged", 
+              m_tracker.tracking_enabled() ? "tracking" : "not tracking" , m_tracker.use_count() );
+     }
+  #endif
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker( const View & vt ) : m_tracker() {
+  #if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+     if (Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled() && view_traits::is_managed) {
+        m_tracker.assign_direct( vt.m_track.m_tracker );
+        std::string sName = m_tracker.template get_label<typename view_traits::memory_space>();
+        printf("non-const copy from view: %s, %d (%s-%s) %d \n", sName.c_str(), sizeof(*this),
+              view_traits::is_managed ? "managed" : "unmanaged", 
+              m_tracker.tracking_enabled() ? "tracking" : "not tracking" , m_tracker.use_count() );
+     } else {
+        m_tracker.assign_force_disable( vt.m_track.m_tracker );
+     }
+  #else
+     m_tracker.assign_force_disable( vt.m_track.m_tracker );
+  #endif
+  }
+
+//  KOKKOS_INLINE_FUNCTION
+//  ViewTracker( ViewTracker && vt ) : m_tracker(std::move(vt.m_tracker)) { }
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker( const track_type & tt ) : m_tracker(tt,view_traits::is_managed) { 
+  #if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+     if (Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled()) {
+        std::string sName = m_tracker.template get_label<typename view_traits::memory_space>();
+        printf("non-const copy from tracker directly: %s, %d \n", sName.c_str(), sizeof(*this));
+     }
+  #endif
+  }
+
+};
+
 } /* namespace Impl */
 } /* namespace Kokkos */
 
