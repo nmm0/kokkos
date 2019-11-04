@@ -53,6 +53,7 @@
 #include <Kokkos_HostSpace.hpp>
 #include <Kokkos_MemoryTraits.hpp>
 #include <Kokkos_ExecPolicy.hpp>
+#include <Kokkos_ViewHooks.hpp>
 
 #if defined(KOKKOS_ENABLE_PROFILING)
 #include <impl/Kokkos_Profiling_Interface.hpp>
@@ -148,7 +149,6 @@ void runtime_check_rank_host(const size_t, const bool, const size_t,
                              const size_t, const std::string&) {}
 #endif
 #endif
-
 
 } /* namespace Impl */
 } /* namespace Kokkos */
@@ -483,6 +483,7 @@ struct ViewTracker {
     if (view_traits::is_managed &&
         Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled()) {
       m_tracker.assign_direct(vt.m_track.m_tracker);
+      if (ViewHooks::is_set()) ViewHooks::call(vt);
     } else {
       m_tracker.assign_force_disable(vt.m_track.m_tracker);
     }
@@ -498,6 +499,7 @@ struct ViewTracker {
     if (view_traits::is_managed &&
         Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled()) {
       m_tracker.assign_direct(vt.impl_view_track().m_tracker);
+      if (ViewHooks::is_set()) ViewHooks::call(vt);
     } else {
       m_tracker.assign_force_disable(vt.impl_view_track().m_tracker);
     }
@@ -512,6 +514,7 @@ struct ViewTracker {
     if (view_traits::is_managed &&
         Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled()) {
       m_tracker.assign_direct(vt.impl_view_track().m_tracker);
+      if (ViewHooks::is_set()) ViewHooks::call(vt);
     } else {
       m_tracker.assign_force_disable(vt.impl_view_track().m_tracker);
     }
