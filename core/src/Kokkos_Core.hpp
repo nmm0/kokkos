@@ -93,6 +93,8 @@
 #include <Kokkos_Timer.hpp>
 #include <Kokkos_TaskScheduler.hpp>
 
+#include <Kokkos_MemoryPoolSpace.hpp>
+
 #include <Kokkos_Complex.hpp>
 
 #include <Kokkos_CopyViews.hpp>
