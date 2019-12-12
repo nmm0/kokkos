@@ -74,6 +74,8 @@ class SharedAllocationHeader {
         reinterpret_cast<char*>(alloc_ptr) - sizeof(SharedAllocationHeader));
   }
 
+  KOKKOS_INLINE_FUNCTION Record* get_record() { return m_record; }
+
   KOKKOS_INLINE_FUNCTION
   const char* label() const { return m_label; }
 };

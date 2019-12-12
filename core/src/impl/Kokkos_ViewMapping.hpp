@@ -2733,12 +2733,58 @@ namespace Impl {
  *  called from the shared memory tracking destruction.
  *  Secondarily to have two fewer partial specializations.
  */
-template <class ExecSpace, class ValueType,
-          bool IsScalar = std::is_scalar<ValueType>::value>
+template <class ExecSpace, class ValueType, class MemorySpace,
+          class Enable = void, bool IsScalar = std::is_scalar<ValueType>::value>
 struct ViewValueFunctor;
 
-template <class ExecSpace, class ValueType>
-struct ViewValueFunctor<ExecSpace, ValueType, false /* is_scalar */> {
+template <class ExecSpace, class ValueType, class MemorySpace>
+struct ViewValueFunctor<
+    ExecSpace, ValueType, MemorySpace,
+    typename std::enable_if<
+        Kokkos::is_indirect_memory_space<MemorySpace>::value, void>::type,
+    false /* is_scalar */> {
+  typedef Kokkos::RangePolicy<ExecSpace> PolicyType;
+  typedef typename ExecSpace::execution_space Exec;
+
+  ViewValueFunctor()                        = default;
+  ViewValueFunctor(const ViewValueFunctor&) = default;
+  ViewValueFunctor& operator=(const ViewValueFunctor&) = default;
+
+  ViewValueFunctor(ExecSpace const& arg_space, ValueType* const arg_ptr,
+                   size_t const arg_n) {}
+
+  void construct_shared_allocation() {}
+
+  void destroy_shared_allocation() {}
+};
+
+template <class ExecSpace, class ValueType, class MemorySpace>
+struct ViewValueFunctor<
+    ExecSpace, ValueType, MemorySpace,
+    typename std::enable_if<
+        Kokkos::is_indirect_memory_space<MemorySpace>::value, void>::type,
+    true /* is_scalar */> {
+  typedef Kokkos::RangePolicy<ExecSpace> PolicyType;
+  typedef typename ExecSpace::execution_space Exec;
+
+  ViewValueFunctor()                        = default;
+  ViewValueFunctor(const ViewValueFunctor&) = default;
+  ViewValueFunctor& operator=(const ViewValueFunctor&) = default;
+
+  ViewValueFunctor(ExecSpace const& arg_space, ValueType* const arg_ptr,
+                   size_t const arg_n) {}
+
+  void construct_shared_allocation() {}
+
+  void destroy_shared_allocation() {}
+};
+
+template <class ExecSpace, class ValueType, class MemorySpace>
+struct ViewValueFunctor<
+    ExecSpace, ValueType, MemorySpace,
+    typename std::enable_if<
+        !Kokkos::is_indirect_memory_space<MemorySpace>::value, void>::type,
+    false /* is_scalar */> {
   typedef Kokkos::RangePolicy<ExecSpace> PolicyType;
   typedef typename ExecSpace::execution_space Exec;
 
@@ -2796,9 +2842,12 @@ struct ViewValueFunctor<ExecSpace, ValueType, false /* is_scalar */> {
 
   void destroy_shared_allocation() { execute(true); }
 };
-
-template <class ExecSpace, class ValueType>
-struct ViewValueFunctor<ExecSpace, ValueType, true /* is_scalar */> {
+template <class ExecSpace, class ValueType, class MemorySpace>
+struct ViewValueFunctor<
+    ExecSpace, ValueType, MemorySpace,
+    typename std::enable_if<
+        !Kokkos::is_indirect_memory_space<MemorySpace>::value, void>::type,
+    true /* is_scalar */> {
   typedef Kokkos::RangePolicy<ExecSpace> PolicyType;
 
   ExecSpace space;
@@ -3128,7 +3177,8 @@ class ViewMapping<
     typedef typename alloc_prop::execution_space execution_space;
     typedef typename Traits::memory_space memory_space;
     typedef typename Traits::value_type value_type;
-    typedef ViewValueFunctor<execution_space, value_type> functor_type;
+    typedef ViewValueFunctor<execution_space, value_type, memory_space>
+        functor_type;
     typedef Kokkos::Impl::SharedAllocationRecord<memory_space, functor_type>
         record_type;
 
