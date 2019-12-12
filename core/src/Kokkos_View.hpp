@@ -53,6 +53,7 @@
 #include <Kokkos_HostSpace.hpp>
 #include <Kokkos_MemoryTraits.hpp>
 #include <Kokkos_ExecPolicy.hpp>
+#include <Kokkos_ViewHooks.hpp>
 
 #if defined(KOKKOS_ENABLE_PROFILING)
 #include <impl/Kokkos_Profiling_Interface.hpp>
@@ -449,6 +450,99 @@ struct ViewTraits {
 template <class DataType, class... Properties>
 class View;
 
+namespace Impl {
+
+/*
+ * \class ViewTracker
+ * \brief template class to wrap the shared allocation tracker
+ *
+ * \section This class is templated on the View and provides
+ * constructors that match the view.  The constructors and assignments
+ * from view will externalize the logic needed to enable/disable
+ * ref counting to provide a single gate to enable further developments
+ * which may hing on the same logic.
+ *
+ */
+template <class ParentView>
+struct ViewTracker {
+  typedef Kokkos::Impl::SharedAllocationTracker track_type;
+  typedef typename ParentView::traits view_traits;
+
+  track_type m_tracker;
+
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker() = default;
+
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker(const ViewTracker& vt) noexcept
+      : m_tracker(vt.m_tracker, view_traits::is_managed) {}
+
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker(const ParentView& vt) noexcept : m_tracker() {
+#if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+    if (view_traits::is_managed && 
+        Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled() ) {
+      m_tracker.assign_direct(vt.m_track.m_tracker);
+      if (ViewHooks::is_set()) ViewHooks::call(vt);
+    } else {
+      m_tracker.assign_force_disable(vt.m_track.m_tracker);
+    }
+#else
+    m_tracker.assign_force_disable(vt.m_track.m_tracker);
+#endif
+  }
+
+  template <class RT, class... RP>
+  KOKKOS_INLINE_FUNCTION ViewTracker(const View<RT, RP...>& vt) noexcept : m_tracker() {
+#if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+    if (view_traits::is_managed && 
+        Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled()) {
+      m_tracker.assign_direct(vt.impl_view_track().m_tracker);
+      if (ViewHooks::is_set()) ViewHooks::call(vt);
+    } else {
+      m_tracker.assign_force_disable(vt.impl_view_track().m_tracker);
+    }
+#else
+    m_tracker.assign_force_disable(vt.impl_view_track().m_tracker);
+#endif
+  }
+
+  template <class RT, class... RP>
+  KOKKOS_INLINE_FUNCTION void assign(const View<RT, RP...>& vt) noexcept {
+#if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+    if (view_traits::is_managed && 
+        Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled() ) {
+      m_tracker.assign_direct(vt.impl_view_track().m_tracker);
+      if (ViewHooks::is_set()) ViewHooks::call(vt);
+    } else {
+      m_tracker.assign_force_disable(vt.impl_view_track().m_tracker);
+    }
+#else
+    m_tracker.assign_force_disable(vt.impl_view_track().m_tracker);
+#endif
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker& operator=(const ViewTracker& rhs) noexcept {
+#if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+    if (view_traits::is_managed && 
+        Kokkos::Impl::SharedAllocationRecord<void, void>::tracking_enabled() ) {
+      m_tracker.assign_direct(rhs.m_tracker);
+    } else {
+      m_tracker.assign_force_disable(rhs.m_tracker);
+    }
+#else
+    m_tracker.assign_force_disable(rhs.m_tracker);
+#endif
+    return *this;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  ViewTracker(const track_type& tt) noexcept : m_tracker(tt, view_traits::is_managed) {}
+};
+
+}  // namespace Impl
+
 } /* namespace Kokkos */
 
 //----------------------------------------------------------------------------
@@ -525,10 +619,10 @@ template <class>
 struct is_view : public std::false_type {};
 
 template <class D, class... P>
-struct is_view<View<D, P...>> : public std::true_type {};
+struct is_view<View<D, P...> > : public std::true_type {};
 
 template <class D, class... P>
-struct is_view<const View<D, P...>> : public std::true_type {};
+struct is_view<const View<D, P...> > : public std::true_type {};
 
 template <class DataType, class... Properties>
 class View : public ViewTraits<DataType, Properties...> {
@@ -540,13 +634,14 @@ class View : public ViewTraits<DataType, Properties...> {
 
  public:
   typedef ViewTraits<DataType, Properties...> traits;
+  typedef Kokkos::Impl::ViewTracker<View> view_tracker_type;
 
  private:
   typedef Kokkos::Impl::ViewMapping<traits, typename traits::specialize>
       map_type;
-  typedef Kokkos::Impl::SharedAllocationTracker track_type;
+  friend view_tracker_type;
 
-  track_type m_track;
+  view_tracker_type m_track;
   map_type m_map;
 
  public:
@@ -571,8 +666,7 @@ class View : public ViewTraits<DataType, Properties...> {
   /** \brief  Compatible HostMirror view */
   typedef View<typename traits::non_const_data_type,
                typename traits::array_layout,
-               Device<DefaultHostExecutionSpace,
-                      typename traits::host_mirror_space::memory_space>>
+               typename traits::host_mirror_space>
       HostMirror;
 
   /** \brief  Compatible HostMirror view */
@@ -787,8 +881,11 @@ class View : public ViewTraits<DataType, Properties...> {
   }
   KOKKOS_INLINE_FUNCTION
   const Kokkos::Impl::SharedAllocationTracker& impl_track() const {
-    return m_track;
+    return m_track.m_tracker;
   }
+
+  KOKKOS_INLINE_FUNCTION
+  const view_tracker_type& impl_view_track() const { return m_track; }
   //----------------------------------------
 
  private:
@@ -1728,8 +1825,7 @@ class View : public ViewTraits<DataType, Properties...> {
   View() : m_track(), m_map() {}
 
   KOKKOS_INLINE_FUNCTION
-  View(const View& rhs)
-      : m_track(rhs.m_track, traits::is_managed), m_map(rhs.m_map) {}
+  View(const View& rhs) : m_track(rhs), m_map(rhs.m_map) {}
 
   KOKKOS_INLINE_FUNCTION
   View(View&& rhs)
@@ -1759,14 +1855,14 @@ class View : public ViewTraits<DataType, Properties...> {
       typename std::enable_if<Kokkos::Impl::ViewMapping<
           traits, typename View<RT, RP...>::traits,
           typename traits::specialize>::is_assignable_data_type>::type* = 0)
-      : m_track(rhs.m_track, traits::is_managed), m_map() {
+      : m_track(rhs), m_map() {
     typedef typename View<RT, RP...>::traits SrcTraits;
     typedef Kokkos::Impl::ViewMapping<traits, SrcTraits,
                                       typename traits::specialize>
         Mapping;
     static_assert(Mapping::is_assignable,
                   "Incompatible View copy construction");
-    Mapping::assign(m_map, rhs.m_map, rhs.m_track);
+    Mapping::assign(m_map, rhs.m_map, rhs.m_track.m_tracker);
   }
 
   template <class RT, class... RP>
@@ -1781,8 +1877,8 @@ class View : public ViewTraits<DataType, Properties...> {
                                       typename traits::specialize>
         Mapping;
     static_assert(Mapping::is_assignable, "Incompatible View copy assignment");
-    Mapping::assign(m_map, rhs.m_map, rhs.m_track);
-    m_track.assign(rhs.m_track, traits::is_managed);
+    Mapping::assign(m_map, rhs.m_map, rhs.m_track.m_tracker);
+    m_track.assign(rhs);
     return *this;
   }
 
@@ -1793,7 +1889,7 @@ class View : public ViewTraits<DataType, Properties...> {
   template <class RT, class... RP, class Arg0, class... Args>
   KOKKOS_INLINE_FUNCTION View(const View<RT, RP...>& src_view, const Arg0 arg0,
                               Args... args)
-      : m_track(src_view.m_track, traits::is_managed), m_map() {
+      : m_track(src_view), m_map() {
     typedef View<RT, RP...> SrcType;
 
     typedef Kokkos::Impl::ViewMapping<void /* deduce destination view type from
@@ -1816,10 +1912,11 @@ class View : public ViewTraits<DataType, Properties...> {
   // Allocation tracking properties
 
   KOKKOS_INLINE_FUNCTION
-  int use_count() const { return m_track.use_count(); }
+  int use_count() const { return m_track.m_tracker.use_count(); }
 
   inline const std::string label() const {
-    return m_track.template get_label<typename traits::memory_space>();
+    return m_track.m_tracker
+        .template get_label<typename traits::memory_space>();
   }
 
   //----------------------------------------
@@ -1899,12 +1996,12 @@ class View : public ViewTraits<DataType, Properties...> {
     //------------------------------------------------------------
 
     // Setup and initialization complete, start tracking
-    m_track.assign_allocated_record_to_uninitialized(record);
+    m_track.m_tracker.assign_allocated_record_to_uninitialized(record);
   }
 
   KOKKOS_INLINE_FUNCTION
   void assign_data(pointer_type arg_data) {
-    m_track.clear();
+    m_track.m_tracker.clear();
     m_map.assign_data(arg_data);
   }
 
@@ -2067,7 +2164,20 @@ class View : public ViewTraits<DataType, Properties...> {
   }
   template <class Traits>
   KOKKOS_INLINE_FUNCTION View(
-      const track_type& track,
+      const view_tracker_type& track,
+      const Kokkos::Impl::ViewMapping<Traits, typename Traits::specialize>& map)
+      : m_track(track), m_map() {
+    typedef Kokkos::Impl::ViewMapping<traits, Traits,
+                                      typename traits::specialize>
+        Mapping;
+    static_assert(Mapping::is_assignable,
+                  "Incompatible View copy construction");
+    Mapping::assign(m_map, map, track.m_tracker);
+  }
+
+  template <class Traits>
+  KOKKOS_INLINE_FUNCTION View(
+      const typename view_tracker_type::track_type& track,
       const Kokkos::Impl::ViewMapping<Traits, typename Traits::specialize>& map)
       : m_track(track), m_map() {
     typedef Kokkos::Impl::ViewMapping<traits, Traits,
