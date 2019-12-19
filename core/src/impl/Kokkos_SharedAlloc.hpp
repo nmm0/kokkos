@@ -75,6 +75,8 @@ class SharedAllocationHeader {
         reinterpret_cast<char*>(alloc_ptr) - sizeof(SharedAllocationHeader));
   }
 
+  inline Record* get_record() { return m_record; }
+
   KOKKOS_INLINE_FUNCTION
   const char* label() const { return m_label; }
 };
@@ -308,10 +310,10 @@ union SharedAllocationTracker {
   template <class MemorySpace>
   constexpr SharedAllocationRecord<MemorySpace, void>* get_record() const
       noexcept {
-    return (m_record_bits & DO_NOT_DEREF_FLAG)
+    return (m_record_bits == DO_NOT_DEREF_FLAG)
                ? (SharedAllocationRecord<MemorySpace, void>*)0
-               : static_cast<SharedAllocationRecord<MemorySpace, void>*>(
-                     m_record);
+               : reinterpret_cast<SharedAllocationRecord<MemorySpace, void>*>(
+                     m_record_bits & ~DO_NOT_DEREF_FLAG);
   }
 
   template <class MemorySpace>
