@@ -104,6 +104,10 @@ foreach(Tag Threads;Serial;OpenMP;Cuda;HPX)
   )
 endforeach()
 
+FOREACH (EXT_PATH ${Kokkos_CODE_EXTENSIONS_PATH})
+  INCLUDE(${EXT_PATH}/core/unit_tests/CMakeLists.txt)  
+ENDFOREACH()
+
 if(Kokkos_ENABLE_SERIAL)
   KOKKOS_ADD_EXECUTABLE_AND_TEST(
     UnitTest_Serial
