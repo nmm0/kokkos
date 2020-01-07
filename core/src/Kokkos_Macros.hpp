@@ -193,7 +193,6 @@
 //----------------------------------------------------------------------------
 // Language info: C++, CUDA, OPENMP
 
-
 #if defined(KOKKOS_ENABLE_ROCM) && defined(__HCC__)
 
 #define KOKKOS_FORCEINLINE_FUNCTION __attribute__((amp, cpu)) inline
