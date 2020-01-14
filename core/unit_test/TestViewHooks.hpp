@@ -51,21 +51,37 @@ namespace Impl {
 
 template <class ViewType>
 class ViewHookSpecialization<
-    ViewType,
-    typename std::enable_if<std::is_const<ViewType>::value, void>::type> {
+    ViewType, typename std::enable_if<
+                  (std::is_const<ViewType>::value &&
+                   !std::is_same<Kokkos::AnonymousSpace,
+                                 typename ViewType::memory_space>::value),
+                  void>::type> {
  public:
   using view_type = ViewType;
 
-  static inline void update_view(ViewType &view, const void *src_rec) {
+  static inline void update_view(ViewType &view, const void *src_rec) {}
+
+  // can copy from const view, not too
+  static void deep_copy(unsigned char *buff, view_type &view) {
+    using memory_space = typename view_type::memory_space;
+    using exec_space   = typename memory_space::execution_space;
+    Kokkos::Impl::DeepCopy<Kokkos::HostSpace, memory_space, exec_space>(
+        buff, view.data(),
+        view.span() * sizeof(typename view_type::value_type));
   }
+
+  static void deep_copy(view_type &, unsigned char *) {}
 
   static constexpr const char *m_name = "ConstImpl";
 };
 
 template <class ViewType>
 class ViewHookSpecialization<
-    ViewType,
-    typename std::enable_if<!std::is_const<ViewType>::value, void>::type> {
+    ViewType, typename std::enable_if<
+                  (!std::is_const<ViewType>::value &&
+                   !std::is_same<Kokkos::AnonymousSpace,
+                                 typename ViewType::memory_space>::value),
+                  void>::type> {
  public:
   using view_type = ViewType;
   static inline void update_view(view_type &view, const void *src_rec) {
@@ -101,12 +117,25 @@ class ViewHookSpecialization<
     // attach the duplicated data to the tracker
     view.assign_record(record);
   }
+  static void deep_copy(unsigned char *buff, view_type &view) {
+    using memory_space = typename view_type::memory_space;
+    using exec_space   = typename memory_space::execution_space;
+    Kokkos::Impl::DeepCopy<Kokkos::HostSpace, memory_space, exec_space>(
+        buff, view.data(),
+        view.span() * sizeof(typename view_type::value_type));
+  }
+  static void deep_copy(view_type &view, unsigned char *buff) {
+    using memory_space = typename view_type::memory_space;
+    using exec_space   = typename memory_space::execution_space;
+    Kokkos::Impl::DeepCopy<Kokkos::HostSpace, memory_space, exec_space>(
+        view.data(), buff,
+        view.span() * sizeof(typename view_type::value_type));
+  }
   static constexpr const char *m_name = "Non-ConstImpl";
 };
 
 }  // namespace Impl
 }  // namespace Kokkos
-
 
 namespace Test {
 
@@ -115,23 +144,20 @@ namespace {
 template <class T, class ExecSpace>
 struct TestViewHooks {
   int N          = 0;
-  using mat_type = Kokkos::View<T**, typename ExecSpace::memory_space>;
+  using mat_type = Kokkos::View<T **, typename ExecSpace::memory_space>;
   mat_type m1;
-  using view_type = Kokkos::View<T*, typename ExecSpace::memory_space>;
+  using view_type = Kokkos::View<T *, typename ExecSpace::memory_space>;
   view_type v1;
   using range_policy = Kokkos::RangePolicy<ExecSpace>;
 
   // default view constructor will initialize data to 0
-  TestViewHooks(const int n_)
-      : N(n_), m1("m1", N, N), v1("v1", N) {}
+  TestViewHooks(const int n_) : N(n_), m1("m1", N, N), v1("v1", N) {}
 
-  TestViewHooks( const TestViewHooks & rhs ) : 
-       N(rhs.N), m1(rhs.m1), v1(rhs.v1) {
-  }
-  TestViewHooks& operator=(const TestViewHooks& rhs) {
-     N =rhs.N;
-     m1 =rhs.m1;
-     v1 =rhs.v1;
+  TestViewHooks(const TestViewHooks &rhs) : N(rhs.N), m1(rhs.m1), v1(rhs.v1) {}
+  TestViewHooks &operator=(const TestViewHooks &rhs) {
+    N  = rhs.N;
+    m1 = rhs.m1;
+    v1 = rhs.v1;
   }
 
   // accumulate data
@@ -142,10 +168,9 @@ struct TestViewHooks {
   }
 
   void run_test() {
- 
-    TestViewHooks tv1(*this);  
+    TestViewHooks tv1(*this);
     // 1, 2 start
-    Kokkos::parallel_for("run_functor", range_policy(0,N), tv1);
+    Kokkos::parallel_for("run_functor", range_policy(0, N), tv1);
     Kokkos::fence();
 
 #if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
@@ -154,19 +179,19 @@ struct TestViewHooks {
           dst.update_view(src.rec_ptr());
         },
         [](Kokkos::ViewHolderBase &, Kokkos::ViewHolderBase &) {});
-#endif 
-   TestViewHooks tv2(*this);  
+#endif
+    TestViewHooks tv2(*this);
 #if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
     Kokkos::ViewHooks::clear();
 #endif
     // reset view contents before running functor.
     // 1, 2
-    Kokkos::parallel_for("run_functor", range_policy(0,N), tv2 );
+    Kokkos::parallel_for("run_functor", range_policy(0, N), tv2);
     Kokkos::fence();
 
     // 2, 4
-    TestViewHooks tv3(*this);  
-    Kokkos::parallel_for("run_functor", range_policy(0,N), tv3 );
+    TestViewHooks tv3(*this);
+    Kokkos::parallel_for("run_functor", range_policy(0, N), tv3);
     Kokkos::fence();
 
     typename view_type::HostMirror v1_h = Kokkos::create_mirror_view(v1);

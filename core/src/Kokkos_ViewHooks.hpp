@@ -55,9 +55,10 @@ class ViewHookSpecialization {
  public:
   using view_type = ViewType;
 
-  static inline void update_view(view_type&, const void*) {
-  }
-  static constexpr const char* m_name = "Default";
+  static inline void update_view(view_type &, const void *) {}
+  static void deep_copy(unsigned char *, view_type &) {}
+  static void deep_copy(view_type &, unsigned char *) {}
+  static constexpr const char *m_name = "Default";
 };
 }  // namespace Impl
 }  // namespace Kokkos
@@ -75,13 +76,18 @@ class ViewHolderBase {
   virtual size_t span() const                = 0;
   virtual bool span_is_contiguous() const    = 0;
   virtual const void *data() const           = 0;
-  virtual void * rec_ptr() const        = 0;
+  virtual void *rec_ptr() const              = 0;
   virtual std::string label() const noexcept = 0;
 
-  virtual ViewHolderBase *clone() const = 0;
-  virtual size_t data_type_size() const = 0;
+  virtual ViewHolderBase *clone() const      = 0;
+  virtual size_t data_type_size() const      = 0;
+  virtual bool is_hostspace() const noexcept = 0;
 
-  virtual void update_view(const void *) = 0;
+  // the following are implemented in the specialization class.
+  // View Holder is only a pass through implementation
+  virtual void deep_copy_to_buffer(unsigned char *buff)   = 0;
+  virtual void deep_copy_from_buffer(unsigned char *buff) = 0;
+  virtual void update_view(const void *)                  = 0;
 };
 
 // ViewHolder derives from ViewHolderBase and it
@@ -90,6 +96,7 @@ template <typename View>
 class ViewHolder : public ViewHolderBase {
  public:
   using view_type                = View;
+  using memory_space             = typename view_type::memory_space;
   using view_hook_specialization = Impl::ViewHookSpecialization<view_type>;
   explicit ViewHolder(view_type &view) : m_view(view) {}
   size_t span() const override { return m_view.span(); }
@@ -98,9 +105,8 @@ class ViewHolder : public ViewHolderBase {
   }
   const void *data() const override { return m_view.data(); };
 
-  void * rec_ptr() const override {
-    return (void *)m_view.impl_track()
-        .template get_record<typename view_type::memory_space>();
+  void *rec_ptr() const override {
+    return (void *)m_view.impl_track().template get_record<memory_space>();
   }
 
   ViewHolder *clone() const override { return new ViewHolder(*this); }
@@ -108,6 +114,17 @@ class ViewHolder : public ViewHolderBase {
   std::string label() const noexcept override { return m_view.label(); }
   size_t data_type_size() const noexcept override {
     return sizeof(typename View::value_type);
+  }
+  bool is_hostspace() const noexcept override {
+    return std::is_same<memory_space, HostSpace>::value;
+  }
+
+  void deep_copy_to_buffer(unsigned char *buff) override {
+    view_hook_specialization::deep_copy(buff, m_view);
+  }
+
+  void deep_copy_from_buffer(unsigned char *buff) override {
+    view_hook_specialization::deep_copy(m_view, buff);
   }
 
   void update_view(const void *src_rec) override {
