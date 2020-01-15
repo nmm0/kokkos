@@ -63,8 +63,6 @@ class ViewHookSpecialization {
 }  // namespace Impl
 }  // namespace Kokkos
 
-#if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
-
 #include <functional>
 #include <memory>
 #include <type_traits>
@@ -75,7 +73,7 @@ class ViewHolderBase {
  public:
   virtual size_t span() const                = 0;
   virtual bool span_is_contiguous() const    = 0;
-  virtual const void *data() const           = 0;
+  virtual void *data() const                 = 0;
   virtual void *rec_ptr() const              = 0;
   virtual std::string label() const noexcept = 0;
 
@@ -90,6 +88,12 @@ class ViewHolderBase {
   virtual void update_view(const void *)                  = 0;
 };
 
+} // Kokkos namespace
+
+#if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+
+namespace Kokkos {
+
 // ViewHolder derives from ViewHolderBase and it
 // implement the pure virtual functions above.
 template <typename View>
@@ -103,7 +107,7 @@ class ViewHolder : public ViewHolderBase {
   bool span_is_contiguous() const override {
     return m_view.span_is_contiguous();
   }
-  const void *data() const override { return m_view.data(); };
+  void *data() const override { return (void*)m_view.data(); };
 
   void *rec_ptr() const override {
     return (void *)m_view.impl_track().template get_record<memory_space>();
