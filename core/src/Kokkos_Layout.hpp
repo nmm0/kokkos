@@ -74,7 +74,7 @@ struct LayoutLeft {
   //! Tag this class as a kokkos array layout
   typedef LayoutLeft array_layout;
 
-  size_t dimension[ARRAY_LAYOUT_MAX_RANK];
+  ptrdiff_t dimension[ARRAY_LAYOUT_MAX_RANK];
 
   enum { is_extent_constructible = true };
 
@@ -84,9 +84,9 @@ struct LayoutLeft {
   LayoutLeft& operator=(LayoutLeft&&) = default;
 
   KOKKOS_INLINE_FUNCTION
-  explicit constexpr LayoutLeft(size_t N0 = 0, size_t N1 = 0, size_t N2 = 0,
-                                size_t N3 = 0, size_t N4 = 0, size_t N5 = 0,
-                                size_t N6 = 0, size_t N7 = 0)
+  explicit constexpr LayoutLeft(ptrdiff_t N0 = 0, ptrdiff_t N1 = 0, ptrdiff_t N2 = 0,
+                                ptrdiff_t N3 = 0, ptrdiff_t N4 = 0, ptrdiff_t N5 = 0,
+                                ptrdiff_t N6 = 0, ptrdiff_t N7 = 0)
       : dimension{N0, N1, N2, N3, N4, N5, N6, N7} {}
 };
 
@@ -108,7 +108,7 @@ struct LayoutRight {
   //! Tag this class as a kokkos array layout
   typedef LayoutRight array_layout;
 
-  size_t dimension[ARRAY_LAYOUT_MAX_RANK];
+  ptrdiff_t dimension[ARRAY_LAYOUT_MAX_RANK];
 
   enum { is_extent_constructible = true };
 
@@ -118,9 +118,9 @@ struct LayoutRight {
   LayoutRight& operator=(LayoutRight&&) = default;
 
   KOKKOS_INLINE_FUNCTION
-  explicit constexpr LayoutRight(size_t N0 = 0, size_t N1 = 0, size_t N2 = 0,
-                                 size_t N3 = 0, size_t N4 = 0, size_t N5 = 0,
-                                 size_t N6 = 0, size_t N7 = 0)
+  explicit constexpr LayoutRight(ptrdiff_t N0 = 0, ptrdiff_t N1 = 0, ptrdiff_t N2 = 0,
+                                 ptrdiff_t N3 = 0, ptrdiff_t N4 = 0, ptrdiff_t N5 = 0,
+                                 ptrdiff_t N6 = 0, ptrdiff_t N7 = 0)
       : dimension{N0, N1, N2, N3, N4, N5, N6, N7} {}
 };
 
@@ -132,8 +132,8 @@ struct LayoutStride {
   //! Tag this class as a kokkos array layout
   typedef LayoutStride array_layout;
 
-  size_t dimension[ARRAY_LAYOUT_MAX_RANK];
-  size_t stride[ARRAY_LAYOUT_MAX_RANK];
+  ptrdiff_t dimension[ARRAY_LAYOUT_MAX_RANK];
+  ptrdiff_t stride[ARRAY_LAYOUT_MAX_RANK];
 
   enum { is_extent_constructible = false };
 
@@ -164,7 +164,7 @@ struct LayoutStride {
       check_input &= ~int(1 << order[r]);
     }
     if (0 == check_input) {
-      size_t n = 1;
+      ptrdiff_t n = 1;
       for (int r = 0; r < rank; ++r) {
         tmp.stride[order[r]] = n;
         n *= (dimen[order[r]]);
@@ -175,12 +175,12 @@ struct LayoutStride {
   }
 
   KOKKOS_INLINE_FUNCTION
-  explicit constexpr LayoutStride(size_t N0 = 0, size_t S0 = 0, size_t N1 = 0,
-                                  size_t S1 = 0, size_t N2 = 0, size_t S2 = 0,
-                                  size_t N3 = 0, size_t S3 = 0, size_t N4 = 0,
-                                  size_t S4 = 0, size_t N5 = 0, size_t S5 = 0,
-                                  size_t N6 = 0, size_t S6 = 0, size_t N7 = 0,
-                                  size_t S7 = 0)
+  explicit constexpr LayoutStride(ptrdiff_t N0 = 0, ptrdiff_t S0 = 0, ptrdiff_t N1 = 0,
+                                  ptrdiff_t S1 = 0, ptrdiff_t N2 = 0, ptrdiff_t S2 = 0,
+                                  ptrdiff_t N3 = 0, ptrdiff_t S3 = 0, ptrdiff_t N4 = 0,
+                                  ptrdiff_t S4 = 0, ptrdiff_t N5 = 0, ptrdiff_t S5 = 0,
+                                  ptrdiff_t N6 = 0, ptrdiff_t S6 = 0, ptrdiff_t N7 = 0,
+                                  ptrdiff_t S7 = 0)
       : dimension{N0, N1, N2, N3, N4, N5, N6, N7}, stride{S0, S1, S2, S3,
                                                           S4, S5, S6, S7} {}
 };
@@ -219,7 +219,7 @@ struct LayoutTileLeft {
   enum { N0 = ArgN0 };
   enum { N1 = ArgN1 };
 
-  size_t dimension[ARRAY_LAYOUT_MAX_RANK];
+  ptrdiff_t dimension[ARRAY_LAYOUT_MAX_RANK];
 
   enum { is_extent_constructible = true };
 
@@ -229,10 +229,10 @@ struct LayoutTileLeft {
   LayoutTileLeft& operator=(LayoutTileLeft&&) = default;
 
   KOKKOS_INLINE_FUNCTION
-  explicit constexpr LayoutTileLeft(size_t argN0 = 0, size_t argN1 = 0,
-                                    size_t argN2 = 0, size_t argN3 = 0,
-                                    size_t argN4 = 0, size_t argN5 = 0,
-                                    size_t argN6 = 0, size_t argN7 = 0)
+  explicit constexpr LayoutTileLeft(ptrdiff_t argN0 = 0, ptrdiff_t argN1 = 0,
+                                    ptrdiff_t argN2 = 0, ptrdiff_t argN3 = 0,
+                                    ptrdiff_t argN4 = 0, ptrdiff_t argN5 = 0,
+                                    ptrdiff_t argN6 = 0, ptrdiff_t argN7 = 0)
       : dimension{argN0, argN1, argN2, argN3, argN4, argN5, argN6, argN7} {}
 };
 
@@ -308,7 +308,7 @@ struct LayoutTiled {
   enum { N6 = ArgN6 };
   enum { N7 = ArgN7 };
 
-  size_t dimension[ARRAY_LAYOUT_MAX_RANK];
+  ptrdiff_t dimension[ARRAY_LAYOUT_MAX_RANK];
 
   enum { is_extent_constructible = true };
 
@@ -318,10 +318,10 @@ struct LayoutTiled {
   LayoutTiled& operator=(LayoutTiled&&) = default;
 
   KOKKOS_INLINE_FUNCTION
-  explicit constexpr LayoutTiled(size_t argN0 = 0, size_t argN1 = 0,
-                                 size_t argN2 = 0, size_t argN3 = 0,
-                                 size_t argN4 = 0, size_t argN5 = 0,
-                                 size_t argN6 = 0, size_t argN7 = 0)
+  explicit constexpr LayoutTiled(ptrdiff_t argN0 = 0, ptrdiff_t argN1 = 0,
+                                 ptrdiff_t argN2 = 0, ptrdiff_t argN3 = 0,
+                                 ptrdiff_t argN4 = 0, ptrdiff_t argN5 = 0,
+                                 ptrdiff_t argN6 = 0, ptrdiff_t argN7 = 0)
       : dimension{argN0, argN1, argN2, argN3, argN4, argN5, argN6, argN7} {}
 };
 
