@@ -514,19 +514,44 @@ KOKKOS_INLINE_FUNCTION
   return return_type(args...);
 }
 
+template<class va1, class va2>
+struct same_rank {
+   enum { value = ( (va1::static_dimension::rank == 
+                     va2::static_dimension::rank ) &&
+                    (va1::dynamic_dimension::rank_dynamic ==
+                     va2::dynamic_dimension::rank_dynamic ) ) };
+};
+
 struct comp_dimensions {
   typedef Impl::ViewArrayAnalysis<int> scalar;
-  typedef Impl::ViewArrayAnalysis<int[2]> static_array1_2;
-  typedef Impl::ViewArrayAnalysis<int[3]> static_array1_3;
-  typedef Impl::ViewArrayAnalysis<int[4]> static_array1_4;
-  typedef Impl::ViewArrayAnalysis<int[5]> static_array1_5;
-  typedef Impl::ViewArrayAnalysis<int*> array_10;
-  typedef Impl::ViewArrayAnalysis<int**> array_20;
-  typedef Impl::ViewArrayAnalysis<int***> array_30;
-  typedef Impl::ViewArrayAnalysis<int****> array_40;
-  typedef Impl::ViewArrayAnalysis<int * [5]> array_11;
-  typedef Impl::ViewArrayAnalysis<int* * [5]> array_21;
-  typedef Impl::ViewArrayAnalysis<int** * [5]> array_31;
+  typedef Impl::ViewArrayAnalysis<int[1]> array0_1;
+  typedef Impl::ViewArrayAnalysis<int[2][2]> array0_2;
+  typedef Impl::ViewArrayAnalysis<int[3][3][3]> array0_3;
+  typedef Impl::ViewArrayAnalysis<int[4][4][4][4]> array0_4;
+  typedef Impl::ViewArrayAnalysis<int[5][5][5][5][5]> array0_5;
+  typedef Impl::ViewArrayAnalysis<int*> array1_0;
+  typedef Impl::ViewArrayAnalysis<int**> array2_0;
+  typedef Impl::ViewArrayAnalysis<int***> array3_0;
+  typedef Impl::ViewArrayAnalysis<int****> array4_0;
+  typedef Impl::ViewArrayAnalysis<int*****> array5_0;
+  typedef Impl::ViewArrayAnalysis<int******> array6_0;
+  typedef Impl::ViewArrayAnalysis<int*******> array7_0;
+  typedef Impl::ViewArrayAnalysis<int*[1]> array1_1;
+  typedef Impl::ViewArrayAnalysis<int**[1]> array2_1;
+  typedef Impl::ViewArrayAnalysis<int***[1]> array3_1;
+  typedef Impl::ViewArrayAnalysis<int****[1]> array4_1;
+  typedef Impl::ViewArrayAnalysis<int*[2][2]> array1_2;
+  typedef Impl::ViewArrayAnalysis<int**[2][2]> array2_2;
+  typedef Impl::ViewArrayAnalysis<int***[2][2]> array3_2;
+  typedef Impl::ViewArrayAnalysis<int****[2][2]> array4_2;
+  typedef Impl::ViewArrayAnalysis<int*[3][3][3]> array1_3;
+  typedef Impl::ViewArrayAnalysis<int**[3][3][3]> array2_3;
+  typedef Impl::ViewArrayAnalysis<int***[3][3][3]> array3_3;
+  typedef Impl::ViewArrayAnalysis<int****[3][3][3]> array4_3;
+  typedef Impl::ViewArrayAnalysis<int*[4][4][4][4]> array1_4;
+  typedef Impl::ViewArrayAnalysis<int**[4][4][4][4]> array2_4;
+  typedef Impl::ViewArrayAnalysis<int***[4][4][4][4]> array3_4;
+  typedef Impl::ViewArrayAnalysis<int****[4][4][4][4]> array4_4;
 };
 
 template <class view_data_analysis, class enabled = void>
@@ -535,113 +560,145 @@ struct mdspan_extents;
 template <class view_data_analysis>
 struct mdspan_extents<
     view_data_analysis,
-    typename std::enable_if<
-        std::is_same<
-            typename view_data_analysis::static_dimension,
-            comp_dimensions::static_array1_2::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::static_array1_2::dynamic_dimension>::
-            value>::type> {
-  typedef extents<2> md_extents;
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array0_1 >::value >::type> {
+  typedef extents<view_data_analysis::static_dimension::ArgN0> md_extents;
 };
 
 template <class view_data_analysis>
 struct mdspan_extents<
     view_data_analysis,
-    typename std::enable_if<
-        std::is_same<
-            typename view_data_analysis::static_dimension,
-            comp_dimensions::static_array1_3::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::static_array1_3::dynamic_dimension>::
-            value>::type> {
-  typedef extents<3> md_extents;
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array0_2 >::value >::type> {
+  typedef extents<view_data_analysis::static_dimension::ArgN0,
+                  view_data_analysis::static_dimension::ArgN1> md_extents;
 };
 
 template <class view_data_analysis>
 struct mdspan_extents<
     view_data_analysis,
-    typename std::enable_if<
-        std::is_same<
-            typename view_data_analysis::static_dimension,
-            comp_dimensions::static_array1_4::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::static_array1_4::dynamic_dimension>::
-            value>::type> {
-  typedef extents<4> md_extents;
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array0_3 >::value >::type> {
+  typedef extents<view_data_analysis::static_dimension::ArgN0,
+                  view_data_analysis::static_dimension::ArgN1,
+                  view_data_analysis::static_dimension::ArgN2> md_extents;
 };
 
 template <class view_data_analysis>
 struct mdspan_extents<
     view_data_analysis,
-    typename std::enable_if<
-        std::is_same<
-            typename view_data_analysis::static_dimension,
-            comp_dimensions::static_array1_5::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::static_array1_5::dynamic_dimension>::
-            value>::type> {
-  typedef extents<5> md_extents;
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array0_4 >::value >::type> {
+  typedef extents<view_data_analysis::static_dimension::ArgN0,
+                  view_data_analysis::static_dimension::ArgN1,
+                  view_data_analysis::static_dimension::ArgN2,
+                  view_data_analysis::static_dimension::ArgN3> md_extents;
 };
 
 template <class view_data_analysis>
 struct mdspan_extents<
     view_data_analysis,
-    typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::scalar::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::scalar::dynamic_dimension>::value>::
-        type> {
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::scalar >::value >::type> {
   typedef extents<> md_extents;
 };
 
 template <class view_data_analysis>
 struct mdspan_extents<
     view_data_analysis,
-    typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_10::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_10::dynamic_dimension>::value>::
-        type> {
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array1_0>::value >::type> {
   typedef extents<dynamic_extent> md_extents;
 };
 
 template <class view_data_analysis>
 struct mdspan_extents<
     view_data_analysis,
-    typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_20::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_20::dynamic_dimension>::value>::
-        type> {
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array2_0>::value >::type> {
   typedef extents<dynamic_extent, dynamic_extent> md_extents;
 };
 
 template <class view_data_analysis>
 struct mdspan_extents<
     view_data_analysis,
-    typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_30::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_30::dynamic_dimension>::value>::
-        type> {
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array3_0>::value >::type> {
   typedef extents<dynamic_extent, dynamic_extent, dynamic_extent> md_extents;
 };
 
 template <class view_data_analysis>
 struct mdspan_extents<
     view_data_analysis,
-    typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_40::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_40::dynamic_dimension>::value>::
-        type> {
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array4_0>::value >::type> {
   typedef extents<dynamic_extent, dynamic_extent, dynamic_extent, dynamic_extent> md_extents;
+};
+
+template <class view_data_analysis>
+struct mdspan_extents<
+    view_data_analysis,
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array5_0>::value >::type> {
+  typedef extents<dynamic_extent, dynamic_extent, 
+        dynamic_extent, dynamic_extent, dynamic_extent> md_extents;
+};
+
+template <class view_data_analysis>
+struct mdspan_extents<
+    view_data_analysis,
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array6_0>::value >::type> {
+  typedef extents<dynamic_extent, dynamic_extent, dynamic_extent,
+        dynamic_extent, dynamic_extent, dynamic_extent> md_extents;
+};
+
+template <class view_data_analysis>
+struct mdspan_extents<
+    view_data_analysis,
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array7_0>::value >::type> {
+  typedef extents<dynamic_extent, dynamic_extent, dynamic_extent,
+        dynamic_extent, dynamic_extent, dynamic_extent, dynamic_extent> md_extents;
+};
+
+template <class view_data_analysis>
+struct mdspan_extents<
+    view_data_analysis,
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array1_1>::value >::type> {
+  typedef extents<dynamic_extent, view_data_analysis::static_dimension::ArgN0> md_extents;
+};
+
+template <class view_data_analysis>
+struct mdspan_extents<
+    view_data_analysis,
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array1_2>::value >::type> {
+  typedef extents<dynamic_extent, view_data_analysis::static_dimension::ArgN0,
+                  view_data_analysis::static_dimension::ArgN1> md_extents;
+};
+
+template <class view_data_analysis>
+struct mdspan_extents<
+    view_data_analysis,
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array1_3>::value >::type> {
+  typedef extents<dynamic_extent, view_data_analysis::static_dimension::ArgN0,
+                  view_data_analysis::static_dimension::ArgN1,
+                  view_data_analysis::static_dimension::ArgN2> md_extents;
+};
+
+template <class view_data_analysis>
+struct mdspan_extents<
+    view_data_analysis,
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array2_1>::value >::type> {
+  typedef extents<dynamic_extent, dynamic_extent,
+                  view_data_analysis::static_dimension::ArgN0> md_extents;
+};
+
+template <class view_data_analysis>
+struct mdspan_extents<
+    view_data_analysis,
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array2_2>::value >::type> {
+  typedef extents<dynamic_extent, dynamic_extent, 
+                  view_data_analysis::static_dimension::ArgN0,
+                  view_data_analysis::static_dimension::ArgN1> md_extents;
+};
+
+template <class view_data_analysis>
+struct mdspan_extents<
+    view_data_analysis,
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array2_3>::value >::type> {
+  typedef extents<dynamic_extent, dynamic_extent,
+                  view_data_analysis::static_dimension::ArgN0,
+                  view_data_analysis::static_dimension::ArgN1,
+                  view_data_analysis::static_dimension::ArgN2> md_extents;
 };
 template <class traits, class enabled = void>
 struct mdspan_layout;
@@ -673,20 +730,20 @@ struct mdspan_layout<
 };
 */
 
+// make the default the same a static only...
 template <class mapping_type, class extents_type, class view_data_analysis,
           class array_layout, class enabled = void>
-struct mdspan_mapping;
+struct mdspan_mapping { 
+  static constexpr mapping_type mapping(array_layout arg_layout) {
+    return mapping_type(extents_type());
+  }
+};
 
 template <class mapping_type, class extents_type, class view_data_analysis,
           class array_layout>
 struct mdspan_mapping<
     mapping_type, extents_type, view_data_analysis, array_layout,
-    typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::scalar::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::scalar::dynamic_dimension>::value>::
-        type> {
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::scalar>::value >::type> {
   static constexpr mapping_type mapping(array_layout arg_layout) {
     return mapping_type();
   }
@@ -697,75 +754,11 @@ template <class mapping_type, class extents_type, class view_data_analysis,
 struct mdspan_mapping<
     mapping_type, extents_type, view_data_analysis, array_layout,
     typename std::enable_if<
-        std::is_same<
-            typename view_data_analysis::static_dimension,
-            comp_dimensions::static_array1_2::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::static_array1_2::dynamic_dimension>::
-            value>::type> {
-  static constexpr mapping_type mapping(array_layout arg_layout) {
-    return mapping_type(extents_type());
-  }
-};
-
-template <class mapping_type, class extents_type, class view_data_analysis,
-          class array_layout>
-struct mdspan_mapping<
-    mapping_type, extents_type, view_data_analysis, array_layout,
-    typename std::enable_if<
-        std::is_same<
-            typename view_data_analysis::static_dimension,
-            comp_dimensions::static_array1_3::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::static_array1_3::dynamic_dimension>::
-            value>::type> {
-  static constexpr mapping_type mapping(array_layout arg_layout) {
-    return mapping_type(extents_type());
-  }
-};
-
-template <class mapping_type, class extents_type, class view_data_analysis,
-          class array_layout>
-struct mdspan_mapping<
-    mapping_type, extents_type, view_data_analysis, array_layout,
-    typename std::enable_if<
-        std::is_same<
-            typename view_data_analysis::static_dimension,
-            comp_dimensions::static_array1_4::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::static_array1_4::dynamic_dimension>::
-            value>::type> {
-  static constexpr mapping_type mapping(array_layout arg_layout) {
-    return mapping_type(extents_type());
-  }
-};
-
-template <class mapping_type, class extents_type, class view_data_analysis,
-          class array_layout>
-struct mdspan_mapping<
-    mapping_type, extents_type, view_data_analysis, array_layout,
-    typename std::enable_if<
-        std::is_same<
-            typename view_data_analysis::static_dimension,
-            comp_dimensions::static_array1_5::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::static_array1_5::dynamic_dimension>::
-            value>::type> {
-  static constexpr mapping_type mapping(array_layout arg_layout) {
-    return mapping_type(extents_type());
-  }
-};
-
-template <class mapping_type, class extents_type, class view_data_analysis,
-          class array_layout>
-struct mdspan_mapping<
-    mapping_type, extents_type, view_data_analysis, array_layout,
-    typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_10::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_10::dynamic_dimension>::value>::
-        type> {
+        same_rank< view_data_analysis, comp_dimensions::array1_0>::value ||
+        same_rank< view_data_analysis, comp_dimensions::array1_1>::value ||
+        same_rank< view_data_analysis, comp_dimensions::array1_2>::value ||
+        same_rank< view_data_analysis, comp_dimensions::array1_3>::value
+        >::type> {
   static constexpr mapping_type mapping(array_layout arg_layout) {
     return mapping_type(extents_type(arg_layout.dimension[0]));
   }
@@ -776,11 +769,11 @@ template <class mapping_type, class extents_type, class view_data_analysis,
 struct mdspan_mapping<
     mapping_type, extents_type, view_data_analysis, array_layout,
     typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_20::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_20::dynamic_dimension>::value>::
-        type> {
+        same_rank< view_data_analysis, comp_dimensions::array2_0>::value ||
+        same_rank< view_data_analysis, comp_dimensions::array2_1>::value ||
+        same_rank< view_data_analysis, comp_dimensions::array2_2>::value ||
+        same_rank< view_data_analysis, comp_dimensions::array2_3>::value
+        >::type> {
   static constexpr mapping_type mapping(array_layout arg_layout) {
     return mapping_type(
         extents_type(arg_layout.dimension[0], arg_layout.dimension[1]));
@@ -792,11 +785,11 @@ template <class mapping_type, class extents_type, class view_data_analysis,
 struct mdspan_mapping<
     mapping_type, extents_type, view_data_analysis, array_layout,
     typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_30::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_30::dynamic_dimension>::value>::
-        type> {
+        same_rank< view_data_analysis, comp_dimensions::array3_0>::value ||
+        same_rank< view_data_analysis, comp_dimensions::array3_1>::value ||
+        same_rank< view_data_analysis, comp_dimensions::array3_2>::value ||
+        same_rank< view_data_analysis, comp_dimensions::array3_3>::value
+        >::type> {
   static constexpr mapping_type mapping(array_layout arg_layout) {
     return mapping_type(extents_type(arg_layout.dimension[0],
                                      arg_layout.dimension[1],
@@ -809,11 +802,8 @@ template <class mapping_type, class extents_type, class view_data_analysis,
 struct mdspan_mapping<
     mapping_type, extents_type, view_data_analysis, array_layout,
     typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_40::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_40::dynamic_dimension>::value>::
-        type> {
+        same_rank< view_data_analysis, comp_dimensions::array4_0>::value
+        >::type> {
   static constexpr mapping_type mapping(array_layout arg_layout) {
     return mapping_type(
         extents_type(arg_layout.dimension[0], arg_layout.dimension[1],
@@ -826,29 +816,13 @@ template <class mapping_type, class extents_type, class view_data_analysis,
 struct mdspan_mapping<
     mapping_type, extents_type, view_data_analysis, array_layout,
     typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_11::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_11::dynamic_dimension>::value>::
-        type> {
-  static constexpr mapping_type mapping(array_layout arg_layout) {
-    return mapping_type(extents_type(arg_layout.dimension[0]));
-  }
-};
-
-template <class mapping_type, class extents_type, class view_data_analysis,
-          class array_layout>
-struct mdspan_mapping<
-    mapping_type, extents_type, view_data_analysis, array_layout,
-    typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_21::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_21::dynamic_dimension>::value>::
-        type> {
+        same_rank< view_data_analysis, comp_dimensions::array5_0>::value
+        >::type> {
   static constexpr mapping_type mapping(array_layout arg_layout) {
     return mapping_type(
-        extents_type(arg_layout.dimension[0], arg_layout.dimension[1]));
+        extents_type(arg_layout.dimension[0], arg_layout.dimension[1],
+                     arg_layout.dimension[2], arg_layout.dimension[3],
+                     arg_layout.dimension[4]));
   }
 };
 
@@ -857,18 +831,15 @@ template <class mapping_type, class extents_type, class view_data_analysis,
 struct mdspan_mapping<
     mapping_type, extents_type, view_data_analysis, array_layout,
     typename std::enable_if<
-        std::is_same<typename view_data_analysis::static_dimension,
-                     comp_dimensions::array_31::static_dimension>::value &&
-        std::is_same<typename view_data_analysis::dynamic_dimension,
-                     comp_dimensions::array_31::dynamic_dimension>::value>::
-        type> {
+        same_rank< view_data_analysis, comp_dimensions::array6_0>::value
+        >::type> {
   static constexpr mapping_type mapping(array_layout arg_layout) {
-    return mapping_type(extents_type(arg_layout.dimension[0],
-                                     arg_layout.dimension[1],
-                                     arg_layout.dimension[2]));
+    return mapping_type(
+        extents_type(arg_layout.dimension[0], arg_layout.dimension[1],
+                     arg_layout.dimension[2], arg_layout.dimension[3],
+                     arg_layout.dimension[4], arg_layout.dimension[5]));
   }
 };
-
 template <class traits, class enabled = void>
 struct mdspan_accessor;
 
@@ -914,17 +885,16 @@ class View : public ViewTraits<DataType, Properties...> {
   friend class Kokkos::Impl::ViewMapping;
 
  public:
-  typedef ViewTraits<DataType, Properties...> traits;
-  typedef Impl::ViewArrayAnalysis<DataType> view_data_analysis;
-  typedef typename mdspan_extents<view_data_analysis>::md_extents extents_type;
-  typedef basic_mdspan<typename traits::value_type,
-                       typename mdspan_extents<view_data_analysis>::md_extents,
+  using traits = ViewTraits<DataType, Properties...>;
+  using view_data_analysis = Impl::ViewArrayAnalysis<DataType>;
+  using extents_type = typename mdspan_extents<view_data_analysis>::md_extents;
+  using mdspan_type = basic_mdspan<typename traits::value_type,
+                       extents_type,
                        typename mdspan_layout<traits>::md_layout,
-                       typename mdspan_accessor<traits>::md_accessor>
-      mdspan_type;
+                       typename mdspan_accessor<traits>::md_accessor>;
 
-  typedef typename mdspan_type::mapping_type mapping_type;
-  typedef typename mdspan_accessor<traits>::md_accessor accessor_type;
+  using mapping_type = typename mdspan_type::mapping_type;
+  using accessor_type = typename mdspan_accessor<traits>::md_accessor;
 
  private:
   typedef Kokkos::Impl::SharedAllocationTracker track_type;
@@ -2330,7 +2300,7 @@ class View : public ViewTraits<DataType, Properties...> {
   template <class RT, class... RP>
   KOKKOS_INLINE_FUNCTION View(const View<RT, RP...>& rhs)
       : m_track(rhs.m_track, traits::is_managed),
-        m_map(mdspan_type(rhs.m_map)) {}
+        m_map(rhs.m_map.data(), rhs.m_map.extents()) {}
 
   template <class RT, class... RP>
   KOKKOS_INLINE_FUNCTION View& operator=(const View<RT, RP...>& rhs) {
@@ -2339,7 +2309,7 @@ class View : public ViewTraits<DataType, Properties...> {
                                       typename traits::specialize>
         Mapping;
     static_assert(Mapping::is_assignable, "Incompatible View copy assignment");
-    m_map = mdspan_type(rhs.m_map);
+    m_map = mdspan_type(rhs.m_map.data(), rhs.m_map.extents());
     m_track.assign(rhs.m_track, traits::is_managed);
     return *this;
   }
@@ -2367,7 +2337,8 @@ class View : public ViewTraits<DataType, Properties...> {
                                   typename traits::specialize>::is_assignable,
         "Subview construction requires compatible view and subview arguments");
 
-    m_map.assign(&src_view(arg0, args...));
+    m_map.ptr_ = &src_view(arg0, args...);
+    //m_map.assign(&src_view(arg0, args...));
   }
 
   //----------------------------------------
