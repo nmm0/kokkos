@@ -88,7 +88,7 @@ class ViewHolderBase {
   virtual void update_view(const void *)                  = 0;
 };
 
-} // Kokkos namespace
+}  // namespace Kokkos
 
 #if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
 
@@ -107,7 +107,7 @@ class ViewHolder : public ViewHolderBase {
   bool span_is_contiguous() const override {
     return m_view.span_is_contiguous();
   }
-  void *data() const override { return (void*)m_view.data(); };
+  void *data() const override { return (void *)m_view.data(); };
 
   void *rec_ptr() const override {
     return (void *)m_view.impl_track().template get_record<memory_space>();
