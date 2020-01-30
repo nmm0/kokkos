@@ -59,6 +59,7 @@
 #include <impl/Kokkos_Profiling_Interface.hpp>
 #endif
 
+#include <experimental/mdspan>
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
@@ -306,7 +307,7 @@ struct ViewDimensionAssignable<ViewDimension<DstArgs...>,
 namespace Kokkos {
 namespace Impl {
 
-struct ALL_t {
+struct ALL_t : std::experimental::all_type {
   KOKKOS_INLINE_FUNCTION
   constexpr const ALL_t& operator()() const { return *this; }
 

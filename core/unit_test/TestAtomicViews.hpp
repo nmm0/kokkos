@@ -775,7 +775,7 @@ struct ModEqualAtomicViewFunctor {
   KOKKOS_INLINE_FUNCTION
   void operator()(const long i) const {
     if (i < length && i > 0) {
-      result() %= (double)(input(i));
+      result() %= input(i);
     }
   }
 };

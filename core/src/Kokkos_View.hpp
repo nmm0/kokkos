@@ -536,6 +536,7 @@ struct comp_dimensions {
   typedef Impl::ViewArrayAnalysis<int*****> array5_0;
   typedef Impl::ViewArrayAnalysis<int******> array6_0;
   typedef Impl::ViewArrayAnalysis<int*******> array7_0;
+  typedef Impl::ViewArrayAnalysis<int********> array8_0;
   typedef Impl::ViewArrayAnalysis<int*[1]> array1_1;
   typedef Impl::ViewArrayAnalysis<int**[1]> array2_1;
   typedef Impl::ViewArrayAnalysis<int***[1]> array3_1;
@@ -653,6 +654,14 @@ struct mdspan_extents<
 template <class view_data_analysis>
 struct mdspan_extents<
     view_data_analysis,
+    typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array8_0>::value >::type> {
+  typedef extents<dynamic_extent, dynamic_extent, dynamic_extent, dynamic_extent,
+        dynamic_extent, dynamic_extent, dynamic_extent, dynamic_extent> md_extents;
+};
+
+template <class view_data_analysis>
+struct mdspan_extents<
+    view_data_analysis,
     typename std::enable_if< same_rank< view_data_analysis, comp_dimensions::array1_1>::value >::type> {
   typedef extents<dynamic_extent, view_data_analysis::static_dimension::ArgN0> md_extents;
 };
@@ -719,16 +728,16 @@ struct mdspan_layout<
   typedef layout_right md_layout;
 };
 
-// layout_stride requires more information.
-/*
+// layout_stride requires more information
+
 template <class traits>
 struct mdspan_layout<
     traits,
     typename std::enable_if<std::is_same<typename traits::array_layout,
                                          Kokkos::LayoutStride>::value>::type> {
-  typedef layout_stride md_layout;
+  typedef layout_stride<1> md_layout;
 };
-*/
+
 
 // make the default the same a static only...
 template <class mapping_type, class extents_type, class view_data_analysis,
@@ -838,6 +847,38 @@ struct mdspan_mapping<
         extents_type(arg_layout.dimension[0], arg_layout.dimension[1],
                      arg_layout.dimension[2], arg_layout.dimension[3],
                      arg_layout.dimension[4], arg_layout.dimension[5]));
+  }
+};
+
+template <class mapping_type, class extents_type, class view_data_analysis,
+          class array_layout>
+struct mdspan_mapping<
+    mapping_type, extents_type, view_data_analysis, array_layout,
+    typename std::enable_if<
+        same_rank< view_data_analysis, comp_dimensions::array7_0>::value
+        >::type> {
+  static constexpr mapping_type mapping(array_layout arg_layout) {
+    return mapping_type(
+        extents_type(arg_layout.dimension[0], arg_layout.dimension[1],
+                     arg_layout.dimension[2], arg_layout.dimension[3],
+                     arg_layout.dimension[4], arg_layout.dimension[5],
+                     arg_layout.dimension[6]));
+  }
+};
+
+template <class mapping_type, class extents_type, class view_data_analysis,
+          class array_layout>
+struct mdspan_mapping<
+    mapping_type, extents_type, view_data_analysis, array_layout,
+    typename std::enable_if<
+        same_rank< view_data_analysis, comp_dimensions::array8_0>::value
+        >::type> {
+  static constexpr mapping_type mapping(array_layout arg_layout) {
+    return mapping_type(
+        extents_type(arg_layout.dimension[0], arg_layout.dimension[1],
+                     arg_layout.dimension[2], arg_layout.dimension[3],
+                     arg_layout.dimension[4], arg_layout.dimension[5],
+                     arg_layout.dimension[6], arg_layout.dimension[7]));
   }
 };
 template <class traits, class enabled = void>
@@ -2023,7 +2064,7 @@ class View : public ViewTraits<DataType, Properties...> {
                               reference_type>::type
       access(const I0& i0, Args... args) const {
     KOKKOS_IMPL_VIEW_OPERATOR_VERIFY((m_track, m_map, i0, args...))
-    return m_map.m_impl_handle[i0];
+    return m_map[i0];
   }
 
   template <typename I0, class... Args>
@@ -2299,8 +2340,16 @@ class View : public ViewTraits<DataType, Properties...> {
 
   template <class RT, class... RP>
   KOKKOS_INLINE_FUNCTION View(const View<RT, RP...>& rhs)
-      : m_track(rhs.m_track, traits::is_managed),
-        m_map(rhs.m_map.data(), rhs.m_map.extents()) {}
+      : m_track(rhs.m_track, traits::is_managed),        
+        m_map(rhs.m_map.data(), mdspan_mapping<
+                  mapping_type, extents_type, view_data_analysis,
+                  typename traits::array_layout>::mapping(
+           typename traits::array_layout(rhs.extent(0), rhs.extent(1), rhs.extent(2),
+                                         rhs.extent(3), rhs.extent(4), rhs.extent(5),
+                                         rhs.extent(6), rhs.extent(7))
+                  )
+              ) {
+        }
 
   template <class RT, class... RP>
   KOKKOS_INLINE_FUNCTION View& operator=(const View<RT, RP...>& rhs) {
@@ -2309,7 +2358,7 @@ class View : public ViewTraits<DataType, Properties...> {
                                       typename traits::specialize>
         Mapping;
     static_assert(Mapping::is_assignable, "Incompatible View copy assignment");
-    m_map = mdspan_type(rhs.m_map.data(), rhs.m_map.extents());
+    m_map = mdspan_type(rhs.m_map.data(), m_map.extents());
     m_track.assign(rhs.m_track, traits::is_managed);
     return *this;
   }
@@ -2322,23 +2371,25 @@ class View : public ViewTraits<DataType, Properties...> {
   KOKKOS_INLINE_FUNCTION View(const View<RT, RP...>& src_view, const Arg0& arg0,
                               Args... args)
       : m_track(src_view.m_track, traits::is_managed), m_map() {
-    typedef View<RT, RP...> SrcType;
 
-    typedef Kokkos::Impl::ViewMapping<void /* deduce destination view type from
-                                              source view traits */
-                                      ,
-                                      typename SrcType::traits, Arg0, Args...>
-        Mapping;
+//    typedef View<RT, RP...> SrcType;
+//
+//    typedef Kokkos::Impl::ViewMapping<void /* deduce destination view type from
+//                                              source view traits */
+//                                      ,
+//                                      typename SrcType::traits, Arg0, Args...>
+//        Mapping;
+//
+//    typedef typename Mapping::type DstType;
+//
+//    static_assert(
+//        Kokkos::Impl::ViewMapping<traits, typename DstType::traits,
+//                                  typename traits::specialize>::is_assignable,
+//        "Subview construction requires compatible view and subview arguments");*/
 
-    typedef typename Mapping::type DstType;
+    auto sub = subspan(src_view.m_map, arg0, args...);
+    m_map = sub;
 
-    static_assert(
-        Kokkos::Impl::ViewMapping<traits, typename DstType::traits,
-                                  typename traits::specialize>::is_assignable,
-        "Subview construction requires compatible view and subview arguments");
-
-    m_map.ptr_ = &src_view(arg0, args...);
-    //m_map.assign(&src_view(arg0, args...));
   }
 
   //----------------------------------------
