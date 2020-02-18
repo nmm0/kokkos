@@ -457,7 +457,7 @@ class View;
 
 #include <impl/Kokkos_ViewMapping.hpp>
 #include <impl/Kokkos_ViewArray.hpp>
-
+#include <Kokkos_ViewHooks.hpp>
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
@@ -791,6 +791,17 @@ class View : public ViewTraits<DataType, Properties...> {
     return m_track;
   }
   //----------------------------------------
+  
+  template <class HandleType>
+  inline void assign_data_handle(HandleType handle) {
+    m_map.m_impl_handle = handle;
+  }
+
+  template <class RecordType>
+  inline void assign_record(RecordType& rec) {
+    m_track.clear();
+    m_track.assign_allocated_record_to_uninitialized(rec);
+  }
 
  private:
   enum {
@@ -1730,7 +1741,9 @@ class View : public ViewTraits<DataType, Properties...> {
 
   KOKKOS_INLINE_FUNCTION
   View(const View& rhs)
-      : m_track(rhs.m_track, traits::is_managed), m_map(rhs.m_map) {}
+      : m_track(rhs.m_track, traits::is_managed), m_map(rhs.m_map) {
+      if (ViewHooks::is_set()) ViewHooks::call(*this, rhs);
+  }
 
   KOKKOS_INLINE_FUNCTION
   View(View&& rhs)
