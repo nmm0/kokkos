@@ -745,6 +745,8 @@ struct functor_vec_red_reducer {
         [&](int i, Scalar &val) { val *= (i % 5 + 1); },
         Kokkos::Prod<Scalar>(value));
 
+    team.team_barrier();
+
     Kokkos::single(Kokkos::PerThread(team), [&]() {
       Scalar test = 1;
 
