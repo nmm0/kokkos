@@ -70,6 +70,8 @@ struct TestViewMappingSubview {
 
   enum { CN0 = 10, CN1 = 11, CN2 = 12 };
   typedef Kokkos::View<int** * [13][14], ExecSpace> CT;
+  // changing CS to CTS here because when compiling with nvshmem, there is a define 
+  // for CS that makes this fail... 
   typedef Kokkos::Subview<CT, range, range, range, int, int> CTS;
 
   enum { DN0 = 10, DN1 = 11, DN2 = 12, DN3 = 13, DN4 = 14 };
