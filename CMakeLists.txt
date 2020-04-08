@@ -181,6 +181,10 @@ ENDIF()
 
 
 
+KOKKOS_OPTION(PLUGIN_PATH "" STRING "Code Plugins Path-Directories of all TPL Plugs (backend extensions)")
+FOREACH (PLUGIN ${Kokkos_PLUGIN_PATH})
+  INCLUDE(${PLUGIN}/CMakeLists.txt)
+ENDFOREACH()
 #------------------------------------------------------------------------------
 #
 # A) Forward declare the package so that certain options are also defined for
@@ -239,9 +243,7 @@ KOKKOS_PROCESS_SUBPACKAGES()
 KOKKOS_PACKAGE_DEF()
 KOKKOS_EXCLUDE_AUTOTOOLS_FILES()
 KOKKOS_PACKAGE_POSTPROCESS()
-
-#We are ready to configure the header
-CONFIGURE_FILE(cmake/KokkosCore_config.h.in KokkosCore_config.h @ONLY)
+KOKKOS_CONFIGURE_CORE()
 
 IF (NOT KOKKOS_HAS_TRILINOS)
   ADD_LIBRARY(kokkos INTERFACE)
@@ -258,8 +260,7 @@ INCLUDE(${KOKKOS_SRC_PATH}/cmake/kokkos_install.cmake)
 # executables also need nvcc_wrapper.  Thus, we need to install it.
 # If the argument of DESTINATION is a relative path, CMake computes it
 # as relative to ${CMAKE_INSTALL_PATH}.
-INSTALL(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/bin/nvcc_wrapper DESTINATION ${CMAKE_INSTALL_BINDIR})
-INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/KokkosCore_config.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+KOKKOS_INSTALL_FILES()
 
 
 #  Finally - if we are a subproject - make sure the enabled devices are visible

@@ -118,27 +118,21 @@ class Cuda {
   //@{
 
   //! Tag this class as a kokkos execution space
-  typedef Cuda execution_space;
+  using execution_space = Cuda;
 
-#if defined(KOKKOS_ENABLE_CUDA_UVM)
-  //! This execution space's preferred memory space.
-  typedef CudaUVMSpace memory_space;
-#else
-  //! This execution space's preferred memory space.
-  typedef CudaSpace memory_space;
-#endif
+  using memory_space = Kokkos::Impl::DefaultDeviceMemorySpace;
 
   //! This execution space preferred device_type
-  typedef Kokkos::Device<execution_space, memory_space> device_type;
+  using device_type = Kokkos::Device<execution_space, memory_space>;
 
   //! The size_type best suited for this execution space.
-  typedef memory_space::size_type size_type;
+  using size_type = memory_space::size_type;
 
   //! This execution space's preferred array layout.
-  typedef LayoutLeft array_layout;
+  using array_layout = LayoutLeft;
 
   //!
-  typedef ScratchMemorySpace<Cuda> scratch_memory_space;
+  using scratch_memory_space = ScratchMemorySpace<Cuda>;
 
   //@}
   //--------------------------------------------------
