@@ -50,37 +50,13 @@
 
 #include <Kokkos_Core_fwd.hpp>
 
-#if defined(KOKKOS_ENABLE_SERIAL)
-#include <Kokkos_Serial.hpp>
-#endif
+#include <KokkosCore_Config_DeclareBackend.hpp>
 
-#if defined(KOKKOS_ENABLE_OPENMP)
-#include <Kokkos_OpenMP.hpp>
-#endif
 
-#if defined(KOKKOS_ENABLE_OPENMPTARGET)
-#include <Kokkos_OpenMPTarget.hpp>
-#include <Kokkos_OpenMPTargetSpace.hpp>
-#endif
 
-#if defined(KOKKOS_ENABLE_HPX)
-#include <Kokkos_HPX.hpp>
-#endif
 
-#if defined(KOKKOS_ENABLE_THREADS)
-#include <Kokkos_Threads.hpp>
-#endif
 
-#if defined(KOKKOS_ENABLE_CUDA)
-#include <Kokkos_Cuda.hpp>
-#endif
 
-#if defined(KOKKOS_ENABLE_ROCM)
-#include <Kokkos_ROCm.hpp>
-#endif
-#if defined(KOKKOS_ENABLE_HIP)
-#include <Kokkos_HIP.hpp>
-#endif
 
 #include <Kokkos_AnonymousSpace.hpp>
 #include <Kokkos_Pair.hpp>
@@ -260,7 +236,7 @@ class ScopeGuard {
 // The real answer is to finally break up Kokkos_Parallel_Reduce.hpp into
 // smaller parts...
 #include <impl/Kokkos_Combined_Reducer.hpp>
-
+#include <KokkosCore_Config_PostInclude.hpp>
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 

@@ -1,0 +1,60 @@
+
+//----------------------------------------------------------------------------
+// Set the default execution space.
+//
+#cmakedefine KOKKOS_DEVICE_SPACE_ACTIVE
+#cmakedefine KOKKOS_HOSTPARALLEL_SPACE_ACTIVE
+
+class NoTypeDefined {
+};
+
+/// Define Kokkos::DefaultExecutionSpace as per configuration option
+/// or chosen from the enabled execution spaces in the following order:
+/// Kokkos::Cuda, Kokkos::Experimental::OpenMPTarget, Kokkos::OpenMP,
+/// Kokkos::Threads, Kokkos::Serial
+
+namespace Kokkos {
+
+#if defined(KOKKOS_DEVICE_SPACE_ACTIVE)
+   using DefaultExecutionSpace=@_DEVICE_PARALLEL@;
+   #if defined(KOKKOS_HOSTPARALLEL_SPACE_ACTIVE)
+      using DefaultHostExecutionSpace=@_HOST_PARALLEL@;
+   #else
+      using DefaultHostExecutionSpace=Serial;
+   #endif
+#else
+   #if defined(KOKKOS_HOSTPARALLEL_SPACE_ACTIVE)
+      using DefaultExecutionSpace=@_HOST_PARALLEL@;
+      using DefaultHostExecutionSpace=@_HOST_PARALLEL@;
+   #else
+      using DefaultHostExecutionSpace=Serial;
+      using DefaultExecutionSpace=Serial;
+   #endif
+#endif
+
+namespace Impl {
+
+   using DefaultDeviceMemorySpace=@_DEFAULT_DEVICE_MEMSPACE@;
+   using DefaultHostMemorySpace=@_DEFAULT_HOST_MEMSPACE@;
+
+
+//----------------------------------------------------------------------------
+// Detect the active execution space and define its memory space.
+// This is used to verify whether a running kernel can access
+// a given memory space.
+#if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_CUDA) && \
+    defined(KOKKOS_ENABLE_CUDA)
+using ActiveExecutionMemorySpace = Kokkos::CudaSpace;
+#elif defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HIP) && \
+    defined(KOKKOS_ENABLE_HIP)
+using ActiveExecutionMemorySpace = Kokkos::Experimental::HIPSpace;
+#elif defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
+using ActiveExecutionMemorySpace = Kokkos::HostSpace;
+#else
+using ActiveExecutionMemorySpace = void;
+#endif
+
+
+}  // namespace Impl
+
+}  // namespace Kokkos
