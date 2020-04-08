@@ -232,7 +232,7 @@ class Cuda {
   static int impl_is_initialized();
 
   //! Initialize, telling the CUDA run-time library which device to use.
-  static void impl_initialize(const SelectDevice         = SelectDevice(),
+  static void impl_initialize(const SelectDevice = SelectDevice(),
                               const size_t num_instances = 1);
 #endif
 

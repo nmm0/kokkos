@@ -88,15 +88,7 @@ namespace Kokkos {
 class HostSpace;  ///< Memory space for main process and CPU execution spaces
 class AnonymousSpace;
 
-                 /// processor)
-
-
-
-
-
-
-
-
+/// processor)
 
 template <class ExecutionSpace, class MemorySpace>
 struct Device;
@@ -112,10 +104,7 @@ struct Device;
 /// Kokkos::Cuda, Kokkos::Experimental::OpenMPTarget, Kokkos::OpenMP,
 /// Kokkos::Threads, Kokkos::Serial
 
-
-
 #include <Kokkos_Set_Default_Spaces.hpp>
-
 
 //----------------------------------------------------------------------------
 // Detect the active execution space and define its memory space.
@@ -125,7 +114,6 @@ struct Device;
 namespace Kokkos {
 
 namespace Impl {
-
 
 template <class ActiveSpace, class MemorySpace>
 struct VerifyExecutionCanAccessMemorySpace {
