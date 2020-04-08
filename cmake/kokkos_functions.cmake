@@ -870,7 +870,6 @@ FUNCTION(KOKKOS_CHECK_DEPRECATED_OPTIONS)
     ENDIF()
   ENDFOREACH()
 ENDFUNCTION()
-
 ## KOKKOS_CONFIG_HEADER - parse the data list which is a list of backend names
 ##                        and create output config header file...used for
 ##                        creating dynamic include files based on enabled backends

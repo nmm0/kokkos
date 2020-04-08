@@ -44,12 +44,12 @@ namespace Impl {
 // a given memory space.
 #if defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_CUDA) && \
     defined(KOKKOS_ENABLE_CUDA)
-using ActiveExecutionMemorySpace = Kokkos::CudaSpace;
+using ActiveExecutionMemorySpace = DefaultDeviceMemorySpace;
 #elif defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HIP_GPU) && \
     defined(KOKKOS_ENABLE_HIP)
-using ActiveExecutionMemorySpace = Kokkos::Experimental::HIPSpace;
+using ActiveExecutionMemorySpace = DefaultDeviceMemorySpace;
 #elif defined(KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST)
-using ActiveExecutionMemorySpace = Kokkos::HostSpace;
+using ActiveExecutionMemorySpace = DefaultHostMemorySpace;
 #else
 using ActiveExecutionMemorySpace = void;
 #endif

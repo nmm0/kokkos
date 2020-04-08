@@ -117,6 +117,7 @@ namespace Kokkos {
 
 namespace Impl {
 
+
 template <class ActiveSpace, class MemorySpace>
 struct VerifyExecutionCanAccessMemorySpace {
   enum { value = 0 };

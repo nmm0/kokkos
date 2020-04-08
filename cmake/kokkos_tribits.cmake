@@ -219,7 +219,10 @@ MACRO(KOKKOS_ADD_TEST_EXECUTABLE ROOT_NAME)
     ${PARSE_UNPARSED_ARGUMENTS}
     TESTONLYLIBS kokkos_gtest
   )
+<<<<<<< HEAD
   SET(EXE_NAME ${PACKAGE_NAME}_${ROOT_NAME})
+=======
+>>>>>>> cherry pick from refactor-backend-development-III onto current develop
   FOREACH (PLUGIN ${Kokkos_PLUGIN_PATH})
      KOKKOS_LIB_INCLUDE_DIRECTORIES(${EXE_NAME}
         ${PLUGIN}/core/unit_test)

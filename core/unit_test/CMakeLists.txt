@@ -158,6 +158,7 @@ if(Kokkos_ENABLE_OPENMPTARGET)
   )
 endif()
 
+
 FOREACH (PLUGIN ${Kokkos_PLUGIN_PATH})
   INCLUDE(${PLUGIN}/core/unit_test/CMakeLists.txt)
 ENDFOREACH()

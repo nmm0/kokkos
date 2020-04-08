@@ -109,7 +109,6 @@
 
 #include <KokkosCore_Config_SetupBackend.hpp>
 
-
 //----------------------------------------------------------------------------
 // Mapping compiler built-ins to KOKKOS_COMPILER_*** macros
 
