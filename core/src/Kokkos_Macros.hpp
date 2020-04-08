@@ -187,7 +187,6 @@
 #define KOKKOS_COMPILER_MSVC _MSC_VER
 #endif
 
-
 #if defined(KOKKOS_ENABLE_ROCM) && defined(__HCC__)
 
 #define KOKKOS_IMPL_FORCEINLINE_FUNCTION __attribute__((amp, cpu)) inline
