@@ -457,7 +457,7 @@ ENDIF()
 
 #CMake verbose is kind of pointless
 #Let's just always print things
-MESSAGE(STATUS "Execution Spaces:")
+MESSAGE(STATUS "Built-in Execution Spaces:")
 
 FOREACH (_BACKEND Cuda OpenMPTarget HIP ROCm)
   STRING(TOUPPER ${_BACKEND} UC_BACKEND)
@@ -513,7 +513,7 @@ IF(_HOST_PARALLEL)
 MESSAGE(STATUS "    Host Parallel: ${_HOST_PARALLEL}")
 ELSE()
   SET(_HOST_PARALLEL "NoTypeDefined")
-  MESSAGE(STATUS "    Host Parallel: NONE")
+  MESSAGE(STATUS "    Host Parallel: NoTypeDefined")
 ENDIF()
 
 IF(KOKKOS_ENABLE_SERIAL)
