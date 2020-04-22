@@ -2993,10 +2993,6 @@ inline void deep_copy(
   };
 
   // Checking for Overlapping Views.
-  dst_value_type* dst_start = dst.data();
-  dst_value_type* dst_end   = dst.data() + dst.span();
-  src_value_type* src_start = src.data();
-  src_value_type* src_end   = src.data() + src.span();
   if (!Kokkos::is_file_space_type<src_memory_space>::value &&
       !Kokkos::is_file_space_type<dst_memory_space>::value) {
     if ((((std::ptrdiff_t)dst_start < (std::ptrdiff_t)src_end) &&

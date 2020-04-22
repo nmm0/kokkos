@@ -2785,7 +2785,7 @@ struct ViewValueFunctor<
     typename std::enable_if<!Kokkos::is_file_space_type<MemorySpace>::value,
                             void>::type,
     false> {
-  typedef Kokkos::RangePolicy<ExecSpace, Kokkos::IndexType<int64_t>>;
+  typedef Kokkos::RangePolicy<ExecSpace, Kokkos::IndexType<int64_t>> PolicyType;
   typedef typename ExecSpace::execution_space Exec;
 
   Exec space;
