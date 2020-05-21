@@ -50,19 +50,19 @@
 
 namespace Test {
 
-template <typename DeviceType, typename Layout, int duplication,
-          int contribution, int op, typename NumberType>
+template <typename DeviceType, typename Layout, typename Duplication,
+          typename Contribution, typename OpType, typename NumberType>
 struct test_scatter_view_impl_cls;
 
-template <typename DeviceType, typename Layout, int duplication,
-          int contribution, typename NumberType>
-struct test_scatter_view_impl_cls<DeviceType, Layout, duplication, contribution,
+template <typename DeviceType, typename Layout, typename Duplication,
+          typename Contribution, typename NumberType>
+struct test_scatter_view_impl_cls<DeviceType, Layout, Duplication, Contribution,
                                   Kokkos::Experimental::ScatterSum,
                                   NumberType> {
  public:
   typedef Kokkos::Experimental::ScatterView<
       NumberType * [12], Layout, DeviceType, Kokkos::Experimental::ScatterSum,
-      duplication, contribution>
+      Duplication, Contribution>
       scatter_view_type;
 
   typedef Kokkos::View<NumberType * [12], Layout, DeviceType> orig_view_type;
@@ -161,15 +161,15 @@ struct test_scatter_view_impl_cls<DeviceType, Layout, duplication, contribution,
   }
 };
 
-template <typename DeviceType, typename Layout, int duplication,
-          int contribution, typename NumberType>
-struct test_scatter_view_impl_cls<DeviceType, Layout, duplication, contribution,
+template <typename DeviceType, typename Layout, typename Duplication,
+          typename Contribution, typename NumberType>
+struct test_scatter_view_impl_cls<DeviceType, Layout, Duplication, Contribution,
                                   Kokkos::Experimental::ScatterProd,
                                   NumberType> {
  public:
   typedef Kokkos::Experimental::ScatterView<
       NumberType * [3], Layout, DeviceType, Kokkos::Experimental::ScatterProd,
-      duplication, contribution>
+      Duplication, Contribution>
       scatter_view_type;
 
   typedef Kokkos::View<NumberType * [3], Layout, DeviceType> orig_view_type;
@@ -232,15 +232,15 @@ struct test_scatter_view_impl_cls<DeviceType, Layout, duplication, contribution,
   }
 };
 
-template <typename DeviceType, typename Layout, int duplication,
-          int contribution, typename NumberType>
-struct test_scatter_view_impl_cls<DeviceType, Layout, duplication, contribution,
+template <typename DeviceType, typename Layout, typename Duplication,
+          typename Contribution, typename NumberType>
+struct test_scatter_view_impl_cls<DeviceType, Layout, Duplication, Contribution,
                                   Kokkos::Experimental::ScatterMin,
                                   NumberType> {
  public:
   typedef Kokkos::Experimental::ScatterView<
       NumberType * [3], Layout, DeviceType, Kokkos::Experimental::ScatterMin,
-      duplication, contribution>
+      Duplication, Contribution>
       scatter_view_type;
 
   typedef Kokkos::View<NumberType * [3], Layout, DeviceType> orig_view_type;
@@ -303,15 +303,15 @@ struct test_scatter_view_impl_cls<DeviceType, Layout, duplication, contribution,
   }
 };
 
-template <typename DeviceType, typename Layout, int duplication,
-          int contribution, typename NumberType>
-struct test_scatter_view_impl_cls<DeviceType, Layout, duplication, contribution,
+template <typename DeviceType, typename Layout, typename Duplication,
+          typename Contribution, typename NumberType>
+struct test_scatter_view_impl_cls<DeviceType, Layout, Duplication, Contribution,
                                   Kokkos::Experimental::ScatterMax,
                                   NumberType> {
  public:
   typedef Kokkos::Experimental::ScatterView<
       NumberType * [3], Layout, DeviceType, Kokkos::Experimental::ScatterMax,
-      duplication, contribution>
+      Duplication, Contribution>
       scatter_view_type;
 
   typedef Kokkos::View<NumberType * [3], Layout, DeviceType> orig_view_type;
@@ -373,15 +373,15 @@ struct test_scatter_view_impl_cls<DeviceType, Layout, duplication, contribution,
   }
 };
 
-template <typename DeviceType, typename Layout, int duplication,
-          int contribution, int op, typename NumberType>
+template <typename DeviceType, typename Layout, typename Duplication,
+          typename Contribution, typename OpType, typename NumberType>
 struct test_scatter_view_config {
  public:
   typedef typename test_scatter_view_impl_cls<
-      DeviceType, Layout, duplication, contribution, op,
+      DeviceType, Layout, Duplication, Contribution, OpType,
       NumberType>::scatter_view_type scatter_view_def;
   typedef typename test_scatter_view_impl_cls<
-      DeviceType, Layout, duplication, contribution, op,
+      DeviceType, Layout, Duplication, Contribution, OpType,
       NumberType>::orig_view_type orig_view_def;
 
   void run_test(int n) {
@@ -407,10 +407,10 @@ struct test_scatter_view_config {
     {
       orig_view_def original_view("original_view", n);
       scatter_view_def scatter_view = Kokkos::Experimental::create_scatter_view<
-          op, duplication, contribution>(original_view);
+          OpType, Duplication, Contribution>(original_view);
 
-      test_scatter_view_impl_cls<DeviceType, Layout, duplication, contribution,
-                                 op, NumberType>
+      test_scatter_view_impl_cls<DeviceType, Layout, Duplication, Contribution,
+                                 OpType, NumberType>
           scatter_view_test_impl(scatter_view);
       scatter_view_test_impl.initialize(original_view);
       scatter_view_test_impl.run_parallel(n);
@@ -437,8 +437,8 @@ struct test_scatter_view_config {
       orig_view_def original_view("original_view", n);
       scatter_view_def scatter_view(original_view);
 
-      test_scatter_view_impl_cls<DeviceType, Layout, duplication, contribution,
-                                 op, NumberType>
+      test_scatter_view_impl_cls<DeviceType, Layout, Duplication, Contribution,
+                                 OpType, NumberType>
           scatter_view_test_impl(scatter_view);
       scatter_view_test_impl.initialize(original_view);
       scatter_view_test_impl.run_parallel(n);
@@ -463,7 +463,7 @@ struct test_scatter_view_config {
   }
 };
 
-template <typename DeviceType, int ScatterType, typename NumberType>
+template <typename DeviceType, typename ScatterType, typename NumberType>
 struct TestDuplicatedScatterView {
   TestDuplicatedScatterView(int n) {
     // ScatterSum test
@@ -484,16 +484,16 @@ struct TestDuplicatedScatterView {
 #ifdef KOKKOS_ENABLE_CUDA
 // disable duplicated instantiation with CUDA until
 // UniqueToken can support it
-template <int ScatterType, typename NumberType>
+template <typename ScatterType, typename NumberType>
 struct TestDuplicatedScatterView<Kokkos::Cuda, ScatterType, NumberType> {
   TestDuplicatedScatterView(int) {}
 };
-template <int ScatterType, typename NumberType>
+template <typename ScatterType, typename NumberType>
 struct TestDuplicatedScatterView<
     Kokkos::Device<Kokkos::Cuda, Kokkos::CudaSpace>, ScatterType, NumberType> {
   TestDuplicatedScatterView(int) {}
 };
-template <int ScatterType, typename NumberType>
+template <typename ScatterType, typename NumberType>
 struct TestDuplicatedScatterView<
     Kokkos::Device<Kokkos::Cuda, Kokkos::CudaUVMSpace>, ScatterType,
     NumberType> {
@@ -504,13 +504,13 @@ struct TestDuplicatedScatterView<
 #ifdef KOKKOS_ENABLE_ROCM
 // disable duplicated instantiation with ROCm until
 // UniqueToken can support it
-template <int ScatterType>
+template <typename ScatterType>
 struct TestDuplicatedScatterView<Kokkos::Experimental::ROCm, ScatterType> {
   TestDuplicatedScatterView(int) {}
 };
 #endif
 
-template <typename DeviceType, int ScatterType, typename NumberType = double>
+template <typename DeviceType, typename ScatterType, typename NumberType = double>
 void test_scatter_view(int n) {
   using execution_space = typename DeviceType::execution_space;
 
