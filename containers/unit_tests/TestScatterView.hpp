@@ -432,6 +432,35 @@ struct test_scatter_view_config {
         Kokkos::fence();
       }
     }
+    // Test creation via create_scatter_view overload 1
+    {
+      orig_view_def original_view("original_view", n);
+      scatter_view_def scatter_view = Kokkos::Experimental::create_scatter_view<
+          OpType, Duplication, Contribution>(original_view);
+
+      test_scatter_view_impl_cls<DeviceType, Layout, Duplication, Contribution,
+                                 OpType, NumberType>
+          scatter_view_test_impl(scatter_view);
+      scatter_view_test_impl.initialize(original_view);
+      scatter_view_test_impl.run_parallel(n);
+
+      Kokkos::Experimental::contribute(original_view, scatter_view);
+      scatter_view.reset_except(original_view);
+
+      scatter_view_test_impl.run_parallel(n);
+
+      Kokkos::Experimental::contribute(original_view, scatter_view);
+      Kokkos::fence();
+
+      scatter_view_test_impl.validateResults(original_view);
+
+      {
+        scatter_view_def persistent_view("persistent", n);
+        auto result_view = persistent_view.subview();
+        contribute(result_view, persistent_view);
+        Kokkos::fence();
+      }
+    }
     // Test creation via constructor
     {
       orig_view_def original_view("original_view", n);
@@ -510,7 +539,8 @@ struct TestDuplicatedScatterView<Kokkos::Experimental::ROCm, ScatterType> {
 };
 #endif
 
-template <typename DeviceType, typename ScatterType, typename NumberType = double>
+template <typename DeviceType, typename ScatterType,
+          typename NumberType = double>
 void test_scatter_view(int n) {
   using execution_space = typename DeviceType::execution_space;
 
