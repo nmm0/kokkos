@@ -124,40 +124,40 @@ namespace Kokkos
   {
   public:
 
-    explicit ViewHolder( View &view )
-      : m_view( &view )
+    explicit ViewHolder( const View &view )
+      : m_view( view )
     {}
 
-    size_t span() const override { return m_view->span(); }
-    bool span_is_contiguous() const override { return m_view->span_is_contiguous(); }
-    const void *data() const override { return m_view->data(); };
-    void *data() override { return m_view->data(); };
+    size_t span() const override { return m_view.span(); }
+    bool span_is_contiguous() const override { return m_view.span_is_contiguous(); }
+    const void *data() const override { return m_view.data(); };
+    void *data() override { return m_view.data(); };
 
     ViewHolder *clone() const override
     {
       return new ViewHolder( *this );
     }
 
-    std::string label() const noexcept override { return m_view->label(); }
+    std::string label() const noexcept override { return m_view.label(); }
     size_t data_type_size() const noexcept override { return sizeof( typename View::value_type ); }
 
     bool is_hostspace() const noexcept override { return std::is_same< typename View::memory_space , HostSpace >::value; }
 
     void deep_copy_to_buffer( unsigned char *buff ) override
     {
-      auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
-      deep_copy( unmanaged, *m_view );
+      auto unmanaged = Impl::make_unmanaged_view_like( m_view, buff );
+      deep_copy( unmanaged, m_view );
     }
 
     void deep_copy_from_buffer( unsigned char *buff ) override
     {
-      auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
-      deep_copy( *m_view, unmanaged );
+      auto unmanaged = Impl::make_unmanaged_view_like( m_view, buff );
+      deep_copy( m_view, unmanaged );
     }
 
   private:
 
-    View *m_view;
+    View m_view;
   };
 
   template< class View >
@@ -165,13 +165,13 @@ namespace Kokkos
   {
   public:
 
-    explicit ViewHolder( View &view )
-      : m_view( &view )
+    explicit ViewHolder( const View &view )
+      : m_view( view )
     {}
 
-    size_t span() const override { return m_view->span(); }
-    bool span_is_contiguous() const override { return m_view->span_is_contiguous(); }
-    const void *data() const override { return m_view->data(); };
+    size_t span() const override { return m_view.span(); }
+    bool span_is_contiguous() const override { return m_view.span_is_contiguous(); }
+    const void *data() const override { return m_view.data(); };
     size_t data_type_size() const noexcept override { return sizeof( typename View::value_type ); }
 
     bool is_hostspace() const noexcept override { return std::is_same< typename View::memory_space , HostSpace >::value; }
@@ -181,17 +181,17 @@ namespace Kokkos
       return new ViewHolder( *this );
     }
 
-    std::string label() const noexcept override { return m_view->label(); }
+    std::string label() const noexcept override { return m_view.label(); }
 
     void deep_copy_to_buffer( unsigned char *buff ) override
     {
-      auto unmanaged = Impl::make_unmanaged_view_like( *m_view, buff );
-      deep_copy( unmanaged, *m_view );
+      auto unmanaged = Impl::make_unmanaged_view_like( m_view, buff );
+      deep_copy( unmanaged, m_view );
     }
 
   private:
 
-    View *m_view;
+    View m_view;
   };
 
   struct ViewHooks
@@ -220,23 +220,33 @@ namespace Kokkos
     template< class DataType, class ... Properties >
     static void call( View< DataType, Properties... > &view )
     {
+      callback_type tmp_callback;
+      const_callback_type tmp_const_callback;
+
+      std::swap( s_callback, tmp_callback );
+      std::swap( s_const_callback, tmp_const_callback );
+
       auto holder = ViewHolder< View< DataType, Properties... > >( view );
 
-      do_call( holder );
+      do_call( tmp_callback, tmp_const_callback, std::move( holder ) );
+
+      std::swap( s_callback, tmp_callback );
+      std::swap( s_const_callback, tmp_const_callback );
     }
 
   private:
 
-    static void do_call( ViewHolderBase &view )
+    static void do_call( callback_type _cb, const_callback_type _ccb, ViewHolderBase &&view )
     {
-      if ( s_callback )
-        s_callback( view );
+      if ( _cb ) {
+        _cb(view);
+      }
     }
 
-    static void do_call( ConstViewHolderBase &view )
+    static void do_call( callback_type _cb, const_callback_type _ccb, ConstViewHolderBase &&view )
     {
-      if ( s_const_callback )
-        s_const_callback( view );
+      if ( _ccb )
+        _ccb( view );
     }
 
     static callback_type s_callback;
