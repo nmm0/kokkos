@@ -1358,6 +1358,16 @@ create_scatter_view(OpType, View<RT, RP...> const& original_view) {
   return original_view;  // implicit ScatterView constructor call
 }
 
+template <typename OpType, typename Contribution, typename Duplication,
+          typename RT, typename... RP>
+ScatterView<RT, typename ViewTraits<RT, RP...>::array_layout,
+            typename ViewTraits<RT, RP...>::device_type, OpType, Duplication,
+            Contribution>
+create_scatter_view(OpType, Duplication, Contribution,
+                    View<RT, RP...> const& original_view) {
+  return original_view;  // implicit ScatterView constructor call
+}
+
 }  // namespace Experimental
 }  // namespace Kokkos
 

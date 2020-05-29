@@ -373,6 +373,55 @@ struct test_scatter_view_impl_cls<DeviceType, Layout, Duplication, Contribution,
   }
 };
 
+template <typename DeviceType, typename Layout, typename OpType,
+          typename NumberType>
+struct test_default_scatter_view {
+ public:
+  using default_duplication = Kokkos::Impl::Experimental::DefaultDuplication<
+      typename DeviceType::execution_space>;
+  using Duplication  = typename default_duplication::duplication_type;
+  using Contribution = typename Kokkos::Impl::Experimental::DefaultContribution<
+      typename DeviceType::execution_space, Duplication>::contribution_type;
+  typedef typename test_scatter_view_impl_cls<
+      DeviceType, Layout, Duplication, Contribution, OpType,
+      NumberType>::scatter_view_type scatter_view_def;
+  typedef typename test_scatter_view_impl_cls<
+      DeviceType, Layout, Duplication, Contribution, OpType,
+      NumberType>::orig_view_type orig_view_def;
+
+  void run_test(int n) {
+    // Test creation via create_scatter_view overload 1
+    {
+      orig_view_def original_view("original_view", n);
+      scatter_view_def scatter_view =
+          Kokkos::Experimental::create_scatter_view(OpType{}, original_view);
+
+      test_scatter_view_impl_cls<DeviceType, Layout, Duplication, Contribution,
+                                 OpType, NumberType>
+          scatter_view_test_impl(scatter_view);
+      scatter_view_test_impl.initialize(original_view);
+      scatter_view_test_impl.run_parallel(n);
+
+      Kokkos::Experimental::contribute(original_view, scatter_view);
+      scatter_view.reset_except(original_view);
+
+      scatter_view_test_impl.run_parallel(n);
+
+      Kokkos::Experimental::contribute(original_view, scatter_view);
+      Kokkos::fence();
+
+      scatter_view_test_impl.validateResults(original_view);
+
+      {
+        scatter_view_def persistent_view("persistent", n);
+        auto result_view = persistent_view.subview();
+        contribute(result_view, persistent_view);
+        Kokkos::fence();
+      }
+    }
+  }
+};
+
 template <typename DeviceType, typename Layout, typename Duplication,
           typename Contribution, typename OpType, typename NumberType>
 struct test_scatter_view_config {
@@ -432,11 +481,11 @@ struct test_scatter_view_config {
         Kokkos::fence();
       }
     }
-    // Test creation via create_scatter_view overload 1
+    // Test creation via create_scatter_view overload 2
     {
       orig_view_def original_view("original_view", n);
-      scatter_view_def scatter_view = Kokkos::Experimental::create_scatter_view<
-          OpType, Duplication, Contribution>(original_view);
+      scatter_view_def scatter_view = Kokkos::Experimental::create_scatter_view(
+          OpType{}, Duplication{}, Contribution{}, original_view);
 
       test_scatter_view_impl_cls<DeviceType, Layout, Duplication, Contribution,
                                  OpType, NumberType>
@@ -567,6 +616,12 @@ void test_scatter_view(int n) {
 #ifdef KOKKOS_ENABLE_SERIAL
   }
 #endif
+  {
+    test_default_scatter_view<DeviceType, Kokkos::LayoutRight, ScatterType,
+                              NumberType>
+        test_default_sv;
+    test_default_sv.run_test(n);
+  }
   // with hundreds of threads we were running out of memory.
   // limit (n) so that duplication doesn't exceed 4GB
   constexpr std::size_t maximum_allowed_total_bytes =
