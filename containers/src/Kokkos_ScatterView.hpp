@@ -124,8 +124,7 @@ struct DefaultContribution<Kokkos::OpenMP,
 #ifdef KOKKOS_ENABLE_HPX
 template <>
 struct DefaultDuplication<Kokkos::Experimental::HPX> {
-  using duplication_type = Kokkos::Experimental::ScatterDuplicated
-};
+  using duplication_type = Kokkos::Experimental::ScatterDuplicated;
 };
 template <>
 struct DefaultContribution<Kokkos::Experimental::HPX,
@@ -688,8 +687,8 @@ struct ResetDuplicates
   }
 };
 
+}  // namespace Experimental
 }  // namespace Impl
-}  // namespace Kokkos
 }  // namespace Kokkos
 
 namespace Kokkos {
