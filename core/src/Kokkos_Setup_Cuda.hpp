@@ -10,6 +10,10 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
 
+#if defined(_WIN32)
+#define KOKKOS_IMPL_WINDOWS_CUDA
+#endif
+
 #if !defined(CUDA_VERSION)
 #error "#include <cuda.h> did not define CUDA_VERSION."
 #endif
@@ -58,6 +62,8 @@
 #define KOKKOS_IMPL_FORCEINLINE __forceinline__
 #define KOKKOS_INLINE_FUNCTION __device__ __host__ inline
 #define KOKKOS_FUNCTION __device__ __host__
+#define KOKKOS_IMPL_HOST_FUNCTION __host__
+#define KOKKOS_IMPL_DEVICE_FUNCTION __device__
 #if defined(KOKKOS_COMPILER_NVCC)
 #define KOKKOS_INLINE_FUNCTION_DELETED inline
 #else

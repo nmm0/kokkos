@@ -53,6 +53,7 @@
 
 #include <cstddef>
 #include <iosfwd>
+#include <Kokkos_Core_fwd.hpp>
 #include <Kokkos_Parallel.hpp>
 #include <Kokkos_TaskScheduler.hpp>
 #include <Kokkos_Layout.hpp>
