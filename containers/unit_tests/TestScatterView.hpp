@@ -441,8 +441,8 @@ struct test_scatter_view_config {
 
       ASSERT_FALSE(sv1.is_allocated());
 
-      sv1 = Kokkos::Experimental::create_scatter_view<op, duplication,
-                                                      contribution>(ov1);
+      sv1 = Kokkos::Experimental::create_scatter_view<OpType, Duplication,
+                                                      Contribution>(ov1);
 
       scatter_view_def sv2(sv1);
       scatter_view_def sv3("sv3", n);
