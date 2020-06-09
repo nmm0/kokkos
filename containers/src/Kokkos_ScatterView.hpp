@@ -753,10 +753,14 @@ class ScatterView<DataType, Layout, DeviceType, OpType, ScatterNonDuplicated,
 
   ScatterView() = default;
 
+  /* Constructor - Initialize internal view as a copy of the view arguement */
   template <typename RT, typename... RP>
   ScatterView(View<RT, RP...> const& original_view)
       : internal_view(original_view) {}
 
+  /* Constructor - Initialize internal view with dimensions of Dims arg pack
+   *               having layout specified in template. Allocated without
+   *               initialization. */
   template <typename... Dims>
   ScatterView(std::string const& name, Dims... dims)
       : internal_view(name, dims...) {}
@@ -810,10 +814,33 @@ class ScatterView<DataType, Layout, DeviceType, OpType, ScatterNonDuplicated,
                                                 original_value_type, OpType>(
         internal_view.data(), internal_view.size(), internal_view.label());
   }
+
+#if defined(KOKKOS_ENABLE_DEPRECATED_CODE)
   template <typename DT, typename... RP>
   void reset_except(View<DT, RP...> const& view) {
     if (view.data() != internal_view.data()) reset();
   }
+#else
+  void reset_duplicates() {
+    // this one is a no-op...
+  }
+
+  template <typename... Args>
+  void reset_duplicates(Args... args) {
+    if (sizeof...(args) == 0) {
+      reset();
+    } else {
+      auto sv = Kokkos::subview(internal_view, args...);
+      if (!sv.span_is_contiguous()) {
+        reset();
+      } else {
+        Kokkos::Impl::Experimental::ResetDuplicates<
+            execution_space, original_value_type, OpType>(sv.data(), sv.size(),
+                                                          sv.label());
+      }
+    }
+  }
+#endif
 
   void resize(const size_t n0 = 0, const size_t n1 = 0, const size_t n2 = 0,
               const size_t n3 = 0, const size_t n4 = 0, const size_t n5 = 0,
@@ -929,6 +956,10 @@ class ScatterView<DataType, Kokkos::LayoutRight, DeviceType, OpType,
     internal_view = other_view.internal_view;
   }
 
+  /* Constructor - Initialize internal view with left most dimension as the
+   *               as the unique_token size (thread count) having the remaining
+   *               dimensions match that of the view argument.  Allocated
+   * without initialization followed by reset. */
   template <typename RT, typename... RP>
   ScatterView(View<RT, RP...> const& original_view)
       : unique_token(),
@@ -968,6 +999,10 @@ class ScatterView<DataType, Kokkos::LayoutRight, DeviceType, OpType,
     reset();
   }
 
+  /* Constructor - Initialize internal view with left most dimension as the
+   *               as the unique_token size (thread count) having the remaining
+   *               dimensions match that of the Dims arg pack.  Allocated
+   * without initialization, followed by reset. */
   template <typename... Dims>
   ScatterView(std::string const& name, Dims... dims)
       : internal_view(Kokkos::ViewAllocateWithoutInitializing(name),
@@ -1021,17 +1056,29 @@ class ScatterView<DataType, Kokkos::LayoutRight, DeviceType, OpType,
                                                 original_value_type, OpType>(
         internal_view.data(), internal_view.size(), internal_view.label());
   }
+#if defined(KOKKOS_ENABLE_DEPRECATED_CODE)
   template <typename DT, typename... RP>
   void reset_except(View<DT, RP...> const& view) {
     if (view.data() != internal_view.data()) {
       reset();
       return;
     }
-    Kokkos::Impl::Experimental::ResetDuplicates<execution_space,
-                                                original_value_type, OpType>(
-        internal_view.data() + view.size(), internal_view.size() - view.size(),
-        internal_view.label());
   }
+#else
+  void reset_duplicates() { reset(); }
+
+  template <typename... Args>
+  void reset_duplicates(Args... args) {
+    auto sv = Kokkos::subview(internal_view, args...);
+    if (!sv.span_is_contiguous()) {
+      reset();
+    } else {
+      Kokkos::Impl::Experimental::ResetDuplicates<execution_space,
+                                                  original_value_type, OpType>(
+          sv.data(), sv.size(), sv.label());
+    }
+  }
+#endif
 
   void resize(const size_t n0 = 0, const size_t n1 = 0, const size_t n2 = 0,
               const size_t n3 = 0, const size_t n4 = 0, const size_t n5 = 0,
@@ -1093,6 +1140,11 @@ class ScatterView<DataType, Kokkos::LayoutLeft, DeviceType, OpType,
 
   ScatterView() = default;
 
+  /* Constructor - Initialize internal view with the right most dimension
+   *               being the unique token size (thread count) and the
+   *               remaining dimensions being that of the view argument
+   *               having layout specified in template. Allocated without
+   *               initialization followed by reset. */
   template <typename RT, typename... RP>
   ScatterView(View<RT, RP...> const& original_view) : unique_token() {
     size_t arg_N[8] = {original_view.rank > 0 ? original_view.extent(0)
@@ -1119,6 +1171,11 @@ class ScatterView<DataType, Kokkos::LayoutLeft, DeviceType, OpType,
     reset();
   }
 
+  /* Constructor - Initialize internal view with the right most dimension
+   *               being the unique token size (thread count) and the
+   *               remaining dimensions being that of the Dims arg pack
+   *               having layout specified in template. Allocated without
+   *               initialization followed by reset. */
   template <typename... Dims>
   ScatterView(std::string const& name, Dims... dims) {
     original_view_type original_view;
@@ -1214,6 +1271,7 @@ class ScatterView<DataType, Kokkos::LayoutLeft, DeviceType, OpType,
                                                 original_value_type, OpType>(
         internal_view.data(), internal_view.size(), internal_view.label());
   }
+#if defined(KOKKOS_ENABLE_DEPRECATED_CODE)
   template <typename DT, typename... RP>
   void reset_except(View<DT, RP...> const& view) {
     if (view.data() != internal_view.data()) {
@@ -1225,6 +1283,21 @@ class ScatterView<DataType, Kokkos::LayoutLeft, DeviceType, OpType,
         internal_view.data() + view.size(), internal_view.size() - view.size(),
         internal_view.label());
   }
+#else
+  void reset_duplicates() { reset(); }
+
+  template <typename... Args>
+  void reset_duplicates(Args... args) {
+    auto sv = Kokkos::subview(internal_view, args...);
+    if (!sv.span_is_contiguous()) {
+      reset();
+    } else {
+      Kokkos::Impl::Experimental::ResetDuplicates<execution_space,
+                                                  original_value_type, OpType>(
+          sv.data(), sv.size(), sv.label());
+    }
+  }
+#endif
 
   void resize(const size_t n0 = 0, const size_t n1 = 0, const size_t n2 = 0,
               const size_t n3 = 0, const size_t n4 = 0, const size_t n5 = 0,

@@ -403,7 +403,11 @@ struct test_default_scatter_view {
       scatter_view_test_impl.run_parallel(n);
 
       Kokkos::Experimental::contribute(original_view, scatter_view);
+#if defined(KOKKOS_ENABLE_DEPRECATED_CODE)
       scatter_view.reset_except(original_view);
+#else
+      scatter_view.reset_duplicates();
+#endif
 
       scatter_view_test_impl.run_parallel(n);
 
@@ -465,7 +469,11 @@ struct test_scatter_view_config {
       scatter_view_test_impl.run_parallel(n);
 
       Kokkos::Experimental::contribute(original_view, scatter_view);
+#if defined(KOKKOS_ENABLE_DEPRECATED_CODE)
       scatter_view.reset_except(original_view);
+#else
+      scatter_view.reset_duplicates();
+#endif
 
       scatter_view_test_impl.run_parallel(n);
 
@@ -494,7 +502,11 @@ struct test_scatter_view_config {
       scatter_view_test_impl.run_parallel(n);
 
       Kokkos::Experimental::contribute(original_view, scatter_view);
+#if defined(KOKKOS_ENABLE_DEPRECATED_CODE)
       scatter_view.reset_except(original_view);
+#else
+      scatter_view.reset_duplicates();
+#endif
 
       scatter_view_test_impl.run_parallel(n);
 
@@ -522,7 +534,11 @@ struct test_scatter_view_config {
       scatter_view_test_impl.run_parallel(n);
 
       Kokkos::Experimental::contribute(original_view, scatter_view);
+#if defined(KOKKOS_ENABLE_DEPRECATED_CODE)
       scatter_view.reset_except(original_view);
+#else
+      scatter_view.reset_duplicates();
+#endif
 
       scatter_view_test_impl.run_parallel(n);
 
@@ -559,7 +575,7 @@ struct TestDuplicatedScatterView {
   }
 };
 
-#ifdef KOKKOS_ENABLE_CUDA
+//#ifdef KOKKOS_ENABLE_CUDA
 // disable duplicated instantiation with CUDA until
 // UniqueToken can support it
 template <typename ScatterType, typename NumberType>
@@ -577,7 +593,7 @@ struct TestDuplicatedScatterView<
     NumberType> {
   TestDuplicatedScatterView(int) {}
 };
-#endif
+//#endif
 
 #ifdef KOKKOS_ENABLE_ROCM
 // disable duplicated instantiation with ROCm until
@@ -639,6 +655,7 @@ void test_scatter_view(int n) {
 TEST(TEST_CATEGORY, scatterview) {
   test_scatter_view<TEST_EXECSPACE, Kokkos::Experimental::ScatterSum, double>(
       10);
+
   test_scatter_view<TEST_EXECSPACE, Kokkos::Experimental::ScatterSum,
                     unsigned int>(10);
   test_scatter_view<TEST_EXECSPACE, Kokkos::Experimental::ScatterProd>(10);
@@ -651,7 +668,7 @@ TEST(TEST_CATEGORY, scatterview) {
 
 #ifdef KOKKOS_ENABLE_SERIAL
   bool is_serial = std::is_same<TEST_EXECSPACE, Kokkos::Serial>::value;
-  int big_n      = is_serial ? 100 * 1000 : 10000 * 1000;
+  int big_n = is_serial ? 100 * 1000 : 10000 * 1000;
 #else
   int big_n = 10000 * 1000;
 #endif
@@ -702,7 +719,6 @@ TEST(TEST_CATEGORY, scatterview_devicetype) {
   }
 #endif
 }
-
 }  // namespace Test
 
 #endif  // KOKKOS_TEST_UNORDERED_MAP_HPP
