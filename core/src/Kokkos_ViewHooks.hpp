@@ -100,7 +100,7 @@ namespace Kokkos
     virtual size_t span() const = 0;
     virtual bool span_is_contiguous() const = 0;
     virtual const void *data() const = 0;
-    virtual std::string label() const noexcept =0;
+    virtual std::string label() const = 0;
 
     virtual ConstViewHolderBase *clone() const = 0;
     virtual size_t data_type_size() const = 0;
@@ -144,7 +144,7 @@ namespace Kokkos
       return new ViewHolder( m_view );
     }
 
-    std::string label() const noexcept override { return m_view.label(); }
+    std::string label() const override { return m_view.label(); }
     size_t data_type_size() const noexcept override { return sizeof( typename View::value_type ); }
 
     bool is_hostspace() const noexcept override { return std::is_same< typename View::memory_space , HostSpace >::value; }
@@ -189,7 +189,7 @@ namespace Kokkos
       return new ViewHolder( m_view );
     }
 
-    std::string label() const noexcept override { return m_view.label(); }
+    std::string label() const override { return m_view.label(); }
 
     void deep_copy_to_buffer( unsigned char *buff ) override
     {
