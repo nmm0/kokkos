@@ -95,6 +95,8 @@ namespace Kokkos
   {
   public:
 
+    virtual ~ConstViewHolderBase() = default;
+
     virtual size_t span() const = 0;
     virtual bool span_is_contiguous() const = 0;
     virtual const void *data() const = 0;
@@ -114,6 +116,8 @@ namespace Kokkos
   {
   public:
 
+    virtual ~ViewHolderBase() = default;
+
     virtual void *data() = 0;
     virtual ViewHolderBase *clone() const = 0;
     virtual void deep_copy_from_buffer( unsigned char *buff ) = 0;
@@ -123,6 +127,8 @@ namespace Kokkos
   class ViewHolder : public ViewHolderBase
   {
   public:
+
+    virtual ~ViewHolder() = default;
 
     explicit ViewHolder( const View &view )
       : m_view( view )
@@ -135,7 +141,7 @@ namespace Kokkos
 
     ViewHolder *clone() const override
     {
-      return new ViewHolder( *this );
+      return new ViewHolder( m_view );
     }
 
     std::string label() const noexcept override { return m_view.label(); }
@@ -165,6 +171,8 @@ namespace Kokkos
   {
   public:
 
+    virtual ~ViewHolder() = default;
+
     explicit ViewHolder( const View &view )
       : m_view( view )
     {}
@@ -178,7 +186,7 @@ namespace Kokkos
 
     ViewHolder *clone() const override
     {
-      return new ViewHolder( *this );
+      return new ViewHolder( m_view );
     }
 
     std::string label() const noexcept override { return m_view.label(); }
