@@ -58,10 +58,10 @@
 #if defined(KOKKOS_ENABLE_CUDA)
 // Compiling Cuda code to 'ptx'
 
-#define KOKKOS_FORCEINLINE_FUNCTION __device__ __host__ __forceinline__
+#define KOKKOS_IMPL_FORCEINLINE_FUNCTION __device__ __host__ __forceinline__
 #define KOKKOS_IMPL_FORCEINLINE __forceinline__
-#define KOKKOS_INLINE_FUNCTION __device__ __host__ inline
-#define KOKKOS_FUNCTION __device__ __host__
+#define KOKKOS_IMPL_INLINE_FUNCTION __device__ __host__ inline
+#define KOKKOS_IMPL_FUNCTION __device__ __host__
 #define KOKKOS_IMPL_HOST_FUNCTION __host__
 #define KOKKOS_IMPL_DEVICE_FUNCTION __device__
 #if defined(KOKKOS_COMPILER_NVCC)
@@ -74,4 +74,6 @@
 #else
 #define KOKKOS_DEFAULTED_FUNCTION inline
 #endif
+#define KOKKOS_IMPL_HOST_FUNCTION __host__
+#define KOKKOS_IMPL_DEVICE_FUNCTION __device__
 #endif
