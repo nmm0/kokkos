@@ -93,6 +93,8 @@ class AnonymousSpace;
 template <class ExecutionSpace, class MemorySpace>
 struct Device;
 
+struct InitArguments;
+
 #include <KokkosCore_Config_FwdBackend.hpp>
 }  // namespace Kokkos
 
@@ -128,6 +130,14 @@ struct VerifyExecutionCanAccessMemorySpace<Space, Space> {
   KOKKOS_INLINE_FUNCTION static void verify(void) {}
   KOKKOS_INLINE_FUNCTION static void verify(const void *) {}
 };
+
+class ExecSpaceFactoryBase {
+
+public:
+   virtual void initialize(const InitArguments& args) = 0;
+   virtual ~ExecSpaceFactoryBase() = default; 
+};
+
 }  // namespace Impl
 
 }  // namespace Kokkos

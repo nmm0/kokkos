@@ -41,7 +41,6 @@
 // ************************************************************************
 //@HEADER
 */
-
 #include <Kokkos_Core.hpp>
 #include <impl/Kokkos_Error.hpp>
 #include <cctype>
@@ -76,6 +75,26 @@ std::stack<hook_function_type, std::list<hook_function_type>> finalize_hooks;
 
 namespace Kokkos {
 namespace Impl {
+
+BackendInitializer BackendInitializer::g_backend_initializer;
+
+BackendInitializer & BackendInitializer::get_instance() {
+   return g_backend_initializer;
+}
+
+void BackendInitializer::register_backend( const std::string name, 
+                                           ExecSpaceFactoryBase* backend ) {
+   exec_space_factory_list[name] = backend;
+} 
+
+void BackendInitializer::initialize_backends(const Kokkos::InitArguments& args) {
+ 
+   for (std::map<std::string, ExecSpaceFactoryBase*>::iterator it = 
+        exec_space_factory_list.begin(); it != exec_space_factory_list.end(); it++) {
+      it->second->initialize(args);
+   }
+
+}
 
 int get_ctest_gpu(const char* local_rank_str) {
   auto const* ctest_kokkos_device_type =
@@ -291,15 +310,8 @@ void initialize_backends(const InitArguments& args) {
   }
 #endif
 
-#if defined(KOKKOS_ENABLE_SERIAL)
-  // Prevent "unused variable" warning for 'args' input struct.  If
-  // Serial::initialize() ever needs to take arguments from the input
-  // struct, you may remove this line of code.
-  (void)args;
+   Impl::BackendInitializer::get_instance().initialize_backends(args);
 
-  // Always initialize Serial if it is configure time enabled
-  Kokkos::Serial::impl_initialize();
-#endif
 
 #if defined(KOKKOS_ENABLE_OPENMPTARGET)
   if (std::is_same<Kokkos::Experimental::OpenMPTarget,

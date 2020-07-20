@@ -166,6 +166,16 @@ struct DeviceTypeTraits<Serial> {
 };
 }  // namespace Experimental
 }  // namespace Tools
+
+namespace Impl {
+
+class SerialBackendSpaceFactory : public ExecSpaceFactoryBase {
+public:
+   SerialBackendSpaceFactory();
+   void initialize(const InitArguments& args);
+};
+
+}  // namespace Impl
 }  // namespace Kokkos
 
 /*--------------------------------------------------------------------------*/

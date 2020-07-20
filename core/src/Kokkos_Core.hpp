@@ -66,10 +66,12 @@
 #include <Kokkos_CopyViews.hpp>
 #include <functional>
 #include <iosfwd>
+#include <map>
 
 //----------------------------------------------------------------------------
 
 namespace Kokkos {
+
 
 struct InitArguments {
   int num_threads;
@@ -87,6 +89,25 @@ struct InitArguments {
         skip_device{9999},
         disable_warnings{dw} {}
 };
+
+namespace Impl {
+
+class BackendInitializer {
+
+   std::map<std::string, ExecSpaceFactoryBase*> exec_space_factory_list;
+
+public:
+   BackendInitializer() = default;
+
+   void register_backend( std::string name, ExecSpaceFactoryBase* backend ); 
+   void initialize_backends(const Kokkos::InitArguments& args);
+   static BackendInitializer & get_instance();
+
+protected:
+   static BackendInitializer g_backend_initializer;
+};
+
+} // Impl
 
 void initialize(int& narg, char* arg[]);
 

@@ -177,6 +177,25 @@ void Serial::impl_finalize() {
 
 const char* Serial::name() { return "Serial"; }
 
+namespace Impl {
+
+SerialBackendSpaceFactory g_serial_backend_initializer;
+
+SerialBackendSpaceFactory::SerialBackendSpaceFactory() {
+   BackendInitializer::get_instance().register_backend("100_Serial", this);
+}
+
+void SerialBackendSpaceFactory::initialize(const InitArguments& args) {
+  // Prevent "unused variable" warning for 'args' input struct.  If
+  // Serial::initialize() ever needs to take arguments from the input
+  // struct, you may remove this line of code.
+  (void)args;
+
+  // Always initialize Serial if it is configure time enabled
+  Kokkos::Serial::impl_initialize();
+}
+
+}  // namespace Impl
 }  // namespace Kokkos
 
 #else
