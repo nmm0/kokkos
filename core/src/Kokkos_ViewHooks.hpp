@@ -48,7 +48,6 @@
 #include <Kokkos_HostSpace.hpp>
 #include <Kokkos_Layout.hpp>
 
-#if defined( KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST )
 
 #include <functional>
 #include <memory>
@@ -285,6 +284,5 @@ namespace Kokkos
 
 }  // namespace Kokkos
 
-#endif
 
 #endif  // KOKKOS_VIEWHOOKS_HPP
