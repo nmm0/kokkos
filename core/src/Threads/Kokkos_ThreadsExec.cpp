@@ -833,7 +833,7 @@ void ThreadsSpaceInitializer::do_finalize(const bool all_spaces) {
 
 void ThreadsSpaceInitializer::fence() { Kokkos::Threads::impl_static_fence(); }
 
-void CudaSpaceInitializer::print_exec_space_name(std::ostream &strm) {
+void ThreadsSpaceInitializer::print_exec_space_name(std::ostream &strm) {
   msg << "Threads";
 }
 
