@@ -22,11 +22,6 @@
 
 namespace Kokkos {
 namespace Impl {
-
-struct SequentialHostInit_t {};
-struct WithoutInitializing_t {};
-struct AllowPadding_t {};
-
 template <typename>
 struct is_view_ctor_property : public std::false_type {};
 
