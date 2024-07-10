@@ -161,6 +161,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   using device_type          = typename traits::device_type;
   using pointer_type         = typename traits::value_type*;
   using memory_traits        = typename traits::memory_traits;
+  using host_mirror_space    = typename traits::host_mirror_space;
 
   // typedefs from BasicView
   using mdspan_type    = typename base_t::mdspan_type;
@@ -611,7 +612,11 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   // Memory span required to wrap these dimensions.
   static constexpr size_t required_allocation_size(
       typename traits::array_layout const& layout) {
-    return Impl::mapping_from_array_layout<typename base_t::mapping_type>(layout).required_span_size()*sizeof(value_type);
+    return Impl::mapping_from_array_layout<
+               typename traits::array_layout, typename base_t::mapping_type>(
+               layout)
+               .required_span_size() *
+           sizeof(value_type);
   }
 
   static constexpr size_t required_allocation_size(

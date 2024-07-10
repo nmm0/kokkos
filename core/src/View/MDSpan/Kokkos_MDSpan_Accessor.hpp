@@ -234,6 +234,13 @@ class ReferenceCountedDataHandle {
   ReferenceCountedDataHandle(OtherElementType* ptr)
       : m_tracker(), m_handle(ptr) {}
 
+  template <class OtherElementType,
+            class = std::enable_if_t<std::is_convertible_v<
+                OtherElementType (*)[], value_type (*)[]>>>
+  ReferenceCountedDataHandle(
+      const ReferenceCountedDataHandle<OtherElementType, memory_space>& other)
+      : m_tracker(other.m_tracker), m_handle(other.m_handle) {}
+
   ReferenceCountedDataHandle(const ReferenceCountedDataHandle&)     = default;
   ReferenceCountedDataHandle(ReferenceCountedDataHandle&&) noexcept = default;
   ReferenceCountedDataHandle& operator=(const ReferenceCountedDataHandle&) =
@@ -256,8 +263,8 @@ class ReferenceCountedDataHandle {
   std::string get_label() const { return m_tracker.get_label<memory_space>(); }
 
  private:
-
-  friend class ReferenceCountedDataHandle<ElementType, AnonymousSpace>;
+  template <class OtherElementType, class OtherSpace>
+  friend class ReferenceCountedDataHandle;
   SharedAllocationTracker m_tracker;
   pointer m_handle = nullptr;
 };
@@ -288,9 +295,11 @@ class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
       default;
   ReferenceCountedDataHandle& operator=(ReferenceCountedDataHandle&&) = default;
 
-  template <class OtherSpace>
+  template <class OtherElementType, class OtherSpace,
+            class = std::enable_if_t<std::is_convertible_v<
+                OtherElementType (*)[], value_type (*)[]>>>
   ReferenceCountedDataHandle(
-      const ReferenceCountedDataHandle<ElementType, OtherSpace>& other)
+      const ReferenceCountedDataHandle<OtherElementType, OtherSpace>& other)
       : m_tracker(other.m_tracker), m_handle(other.m_handle) {}
 
   ReferenceCountedDataHandle with_offset(size_t offset) const {
@@ -309,6 +318,9 @@ class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
   std::string get_label() const { return m_tracker.get_label<memory_space>(); }
 
  private:
+  template <class OtherElementType, class OtherSpace>
+  friend class ReferenceCountedDataHandle;
+
   SharedAllocationTracker m_tracker;
   pointer m_handle = nullptr;
 };
