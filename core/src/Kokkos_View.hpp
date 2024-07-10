@@ -740,6 +740,25 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
                                     AccessorType>& mds)
       : View(typename Impl::MDSpanViewTraits<traits>::mdspan_type(mds)) {
   }
+
+public:
+ //----------------------------------------
+ // Allocation tracking properties
+std::string label() const {
+  if constexpr( traits::is_managed ) {
+    return this->data_handle().get_label();
+  } else {
+    return "";
+  }
+ }
+
+ int use_count() const {
+  if constexpr (traits::is_managed) {
+    return this->data_handle().use_count();
+  } else {
+    return 0;
+  }
+ }
 };
 
 template <typename D, class... P>

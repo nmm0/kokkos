@@ -243,7 +243,7 @@ class ReferenceCountedDataHandle {
 
   bool has_record() const { return m_tracker.has_record(); }
   auto* get_record() const { return m_tracker.get_record<MemorySpace>(); }
-  size_t use_count() const noexcept { return m_tracker.use_count(); }
+  int use_count() const noexcept { return m_tracker.use_count(); }
 
   std::string get_label() const { return m_tracker.get_label<MemorySpace>(); }
 

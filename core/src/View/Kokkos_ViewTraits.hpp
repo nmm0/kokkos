@@ -116,6 +116,23 @@ KOKKOS_INLINE_FUNCTION void runtime_check_rank(
 }
 
 #ifdef KOKKOS_ENABLE_IMPL_MDSPAN
+template <class Traits, class Enabled = void>
+struct AccessorFromViewTraits {
+  using type =
+      SpaceAwareAccessor<typename Traits::memory_space,
+                         Kokkos::default_accessor<typename Traits::value_type>>;
+};
+
+template <class Traits>
+struct AccessorFromViewTraits<Traits, std::enable_if_t<Traits::is_managed>> {
+  using type =
+      checked_reference_counted_accessor<typename Traits::value_type,
+                                         typename Traits::memory_space>;
+};
+
+template <class Traits>
+using accessor_from_view_traits_t = typename AccessorFromViewTraits<Traits>::type;
+
 struct UnsupportedKokkosArrayLayout;
 
 template <class Traits, class Enabled = void>
@@ -134,9 +151,7 @@ struct MDSpanViewTraits<Traits,
                                          typename Traits::data_type>::type;
   using mdspan_layout_type =
       typename LayoutFromArrayLayout<typename Traits::array_layout>::type;
-  using accessor_type = SpaceAwareAccessor<
-      typename Traits::memory_space,
-      Kokkos::default_accessor<typename Traits::value_type>>;
+  using accessor_type = accessor_from_view_traits_t<Traits>;
   using mdspan_type = mdspan<typename Traits::value_type, extents_type,
                              mdspan_layout_type, accessor_type>;
 };
