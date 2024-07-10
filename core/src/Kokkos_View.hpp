@@ -505,7 +505,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   explicit inline View(
       const Impl::ViewCtorProp<P...>& arg_prop,
       typename traits::array_layout const& arg_layout)
-      : base_t(arg_prop, Impl::mapping_from_array_layout<typename traits::array_layout, typename mdspan_type::mapping_type>(arg_layout)) {}
+      : base_t(arg_prop, Impl::mapping_from_array_layout<typename mdspan_type::mapping_type>(arg_layout)) {}
 
   template<class ... Args>
   View(pointer_type ptr, Args ... args)
@@ -612,8 +612,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   // Memory span required to wrap these dimensions.
   static constexpr size_t required_allocation_size(
       typename traits::array_layout const& layout) {
-    return Impl::mapping_from_array_layout<
-               typename traits::array_layout, typename base_t::mapping_type>(
+    return Impl::mapping_from_array_layout<typename base_t::mapping_type>(
                layout)
                .required_span_size() *
            sizeof(value_type);
@@ -693,7 +692,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
  public:
   static KOKKOS_INLINE_FUNCTION size_t
   shmem_size(typename traits::array_layout const& arg_layout) {
-    return Impl::mapping_from_array_layout<typename base_t::mapping_type>(arg_layout)*sizeof(value_type) + scratch_value_alignment;
+    return Impl::mapping_from_array_layout<typename base_t::mapping_type>(arg_layout).required_span_size()*sizeof(value_type) + scratch_value_alignment;
   }
 
   explicit KOKKOS_INLINE_FUNCTION View(

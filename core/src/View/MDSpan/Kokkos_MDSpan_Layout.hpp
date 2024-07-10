@@ -129,7 +129,7 @@ KOKKOS_INLINE_FUNCTION auto mapping_from_array_layout_impl(LayoutStride layout, 
   return MappingType{dextents<index_type, MappingType::extents_type::rank()>{layout.dimension[Idx]...}, strides };
 }
 
-template <class ArrayLayout, class MappingType>
+template <class MappingType, class ArrayLayout>
 KOKKOS_INLINE_FUNCTION auto mapping_from_array_layout(ArrayLayout layout) {
   return mapping_from_array_layout_impl<ArrayLayout, MappingType>(layout, std::make_index_sequence<MappingType::extents_type::rank()>());
 }
