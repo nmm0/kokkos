@@ -103,14 +103,15 @@ constexpr bool is_assignable(const Kokkos::View<ViewTDst...>& dst,
 namespace Impl {
 template<class ... Properties>
 struct BasicViewFromTraits {
-  using view_traits = ViewTraits<Properties...>;
+  using view_traits        = ViewTraits<Properties...>;
   using mdspan_view_traits = MDSpanViewTraits<view_traits>;
-  using element_type = typename view_traits::value_type;
-  using extents_type = typename mdspan_view_traits::extents_type;
-  using layout_type = typename mdspan_view_traits::mdspan_layout_type;
-  using accessor_type = typename mdspan_view_traits::accessor_type;
+  using element_type       = typename view_traits::value_type;
+  using extents_type       = typename mdspan_view_traits::extents_type;
+  using layout_type        = typename mdspan_view_traits::mdspan_layout_type;
+  using accessor_type      = typename mdspan_view_traits::accessor_type;
 
-  using type = BasicView<element_type,extents_type,layout_type,accessor_type>;
+  using type =
+      BasicView<element_type, extents_type, layout_type, accessor_type>;
 };
 }  // namespace Impl
 
@@ -148,16 +149,18 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
 
  public:
   // typedefs originally from ViewTraits
-  using data_type         = DataType;
-  using traits            = ViewTraits<DataType, Properties...>;
-  using view_tracker_type = Impl::ViewTracker<View>;
-  using array_layout      = typename traits::array_layout;
-  using device_type       = typename traits::device_type;
- 
+  using data_type           = DataType;
+  using traits              = ViewTraits<DataType, Properties...>;
+  using const_data_type     = typename traits::const_data_type;
+  using non_const_data_type = typename traits::non_const_data_type;
+  using view_tracker_type   = Impl::ViewTracker<View>;
+  using array_layout        = typename traits::array_layout;
+  using device_type         = typename traits::device_type;
+
   // typedefs from BasicView
-  using mdspan_type       = typename base_t::mdspan_type;
-  using pointer_type      = typename base_t::data_handle_type;
-  using reference_type    = typename base_t::reference;
+  using mdspan_type    = typename base_t::mdspan_type;
+  using pointer_type   = typename base_t::data_handle_type;
+  using reference_type = typename base_t::reference;
 
   //----------------------------------------
   /** \brief  Compatible view of array of scalar types */
