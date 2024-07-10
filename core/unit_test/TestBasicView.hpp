@@ -17,6 +17,9 @@
 #include <gtest/gtest.h>
 
 #include <Kokkos_Core.hpp>
+#include <type_traits>
+#include "experimental/__p0009_bits/dynamic_extent.hpp"
+#include "experimental/__p2642_bits/layout_padded_fwd.hpp"
 #ifndef KOKKOS_IMPL_PUBLIC_INCLUDE
 #define KOKKOS_IMPL_PUBLIC_INCLUDE
 #include <View/MDSpan/Kokkos_MDSpan_Accessor.hpp>
@@ -156,6 +159,21 @@ struct TestBasicView {
         KOKKOS_LAMBDA(auto... idxs) { view(idxs...) = (idxs + ...); });
   }
 
+  template <template <std::size_t> class LayoutType, class SrcViewType,
+            class ExtentsType>
+  static void test_construct_from_view(const ExtentsType &extents,
+                                       std::size_t _padding) {
+    using extents_type  = ExtentsType;
+    using layout_type   = LayoutType<Kokkos::dynamic_extent>;
+    using mapping_type  = typename layout_type::template mapping<ExtentsType>;
+    using accessor_type = Kokkos::Impl::checked_reference_counted_accessor<
+        T, typename ExecutionSpace::memory_space>;
+    using basic_view_type =
+        Kokkos::BasicView<T, extents_type, layout_type, accessor_type>;
+    using view_type = SrcViewType;
+    static_assert(std::is_constructible_v<basic_view_type, SrcViewType>);
+  }
+
   template <class LayoutType>
   static void test_access() {
     test_access_with_extents<LayoutType>(Kokkos::extents<std::size_t, 5>());
@@ -200,6 +218,16 @@ struct TestBasicView {
         Kokkos::extents<std::size_t>(), 4);
     test_mapping_constructor<Kokkos::Experimental::layout_right_padded>(
         Kokkos::extents<std::size_t, 2, 3>(), 9);
+
+    test_construct_from_view<
+        Kokkos::Experimental::layout_left_padded,
+        Kokkos::View<double[3], Kokkos::LayoutLeft, ExecutionSpace>>(
+        Kokkos::extents<std::size_t, 3>(), 0);
+
+    test_construct_from_view<
+        Kokkos::Experimental::layout_left_padded,
+        Kokkos::View<double[3], Kokkos::LayoutLeft, ExecutionSpace>>(
+        Kokkos::extents<std::size_t, Kokkos::dynamic_extent>(3), 0);
 
     test_access<
         Kokkos::Experimental::layout_left_padded<Kokkos::dynamic_extent>>();

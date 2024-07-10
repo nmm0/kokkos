@@ -271,7 +271,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
     return data() != nullptr;
   }
   KOKKOS_INLINE_FUNCTION constexpr pointer_type data() const {
-    return base_t::data_handle();
+    return static_cast<pointer_type>(base_t::data_handle());
   }
 
   KOKKOS_INLINE_FUNCTION constexpr int extent_int(size_t r) const { return static_cast<int>(base_t::extent(r)); }
@@ -279,10 +279,15 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   // Allow specializations to query their specialized map
 
   KOKKOS_INLINE_FUNCTION
-  const Kokkos::Impl::ViewMapping<traits, typename traits::specialize>&
-  impl_map() const {
-    return base_t::m_map;
+  auto impl_map() const {
+    using map_type =
+        Kokkos::Impl::ViewMapping<traits, typename traits::specialize>;
+    using offset_type = typename map_type::offset_type;
+    return map_type(
+        data(),
+        offset_type((std::integral_constant<unsigned, 0>(), layout())));
   }
+
   KOKKOS_INLINE_FUNCTION
   const Kokkos::Impl::SharedAllocationTracker& impl_track() const {
     return base_t::m_track.m_tracker;

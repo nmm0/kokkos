@@ -217,9 +217,10 @@ struct AtomicAccessorRelaxed {
 template <class ElementType, class MemorySpace>
 class ReferenceCountedDataHandle {
  public:
-  using value_type = ElementType;
-  using pointer    = value_type*;
-  using reference  = value_type&;
+  using value_type   = ElementType;
+  using pointer      = value_type*;
+  using reference    = value_type&;
+  using memory_space = MemorySpace;
 
   ReferenceCountedDataHandle() = default;
   explicit ReferenceCountedDataHandle(SharedAllocationRecord<void, void>* rec) {
@@ -241,13 +242,61 @@ class ReferenceCountedDataHandle {
   }
 
   pointer get() const noexcept { return m_handle; }
-  operator pointer() const noexcept { return m_handle; }
+  explicit operator pointer() const noexcept { return m_handle; }
 
   bool has_record() const { return m_tracker.has_record(); }
-  auto* get_record() const { return m_tracker.get_record<MemorySpace>(); }
+  auto* get_record() const { return m_tracker.get_record<memory_space>(); }
   int use_count() const noexcept { return m_tracker.use_count(); }
 
-  std::string get_label() const { return m_tracker.get_label<MemorySpace>(); }
+  std::string get_label() const { return m_tracker.get_label<memory_space>(); }
+
+ private:
+
+  friend class ReferenceCountedDataHandle<ElementType, AnonymousSpace>;
+  SharedAllocationTracker m_tracker;
+  pointer m_handle = nullptr;
+};
+
+template <class ElementType>
+class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
+ public:
+  using value_type   = ElementType;
+  using pointer      = value_type*;
+  using reference    = value_type&;
+  using memory_space = AnonymousSpace;
+
+  ReferenceCountedDataHandle() = default;
+  explicit ReferenceCountedDataHandle(SharedAllocationRecord<void, void>* rec) {
+    m_tracker.assign_allocated_record_to_uninitialized(rec);
+    m_handle = static_cast<pointer>(get_record()->data());
+  }
+  ReferenceCountedDataHandle(pointer ptr) : m_tracker(), m_handle(ptr) {}
+
+  ReferenceCountedDataHandle(const ReferenceCountedDataHandle&)     = default;
+  ReferenceCountedDataHandle(ReferenceCountedDataHandle&&) noexcept = default;
+  ReferenceCountedDataHandle& operator=(const ReferenceCountedDataHandle&) =
+      default;
+  ReferenceCountedDataHandle& operator=(ReferenceCountedDataHandle&&) = default;
+
+  template <class OtherSpace>
+  ReferenceCountedDataHandle(
+      const ReferenceCountedDataHandle<ElementType, OtherSpace>& other)
+      : m_tracker(other.m_tracker), m_handle(other.m_handle) {}
+
+  ReferenceCountedDataHandle with_offset(size_t offset) const {
+    auto ret = *this;
+    ret.m_handle += offset;
+    return ret;
+  }
+
+  pointer get() const noexcept { return m_handle; }
+  explicit operator pointer() const noexcept { return m_handle; }
+
+  bool has_record() const { return m_tracker.has_record(); }
+  auto* get_record() const { return m_tracker.get_record<memory_space>(); }
+  int use_count() const noexcept { return m_tracker.use_count(); }
+
+  std::string get_label() const { return m_tracker.get_label<memory_space>(); }
 
  private:
   SharedAllocationTracker m_tracker;
@@ -263,6 +312,30 @@ class ReferenceCountedAccessor {
   using offset_policy    = ReferenceCountedAccessor;
 
   constexpr ReferenceCountedAccessor() noexcept = default;
+
+  constexpr reference access(data_handle_type p, size_t i) const {
+    return p.get()[i];
+  }
+
+  constexpr data_handle_type offset(data_handle_type p, size_t i) const {
+    return p.with_offset(i);
+  }
+};
+
+template <class ElementType>
+class ReferenceCountedAccessor<ElementType, AnonymousSpace> {
+ public:
+  using element_type = ElementType;
+  using data_handle_type =
+      ReferenceCountedDataHandle<ElementType, AnonymousSpace>;
+  using reference     = typename data_handle_type::reference;
+  using offset_policy = ReferenceCountedAccessor;
+
+  constexpr ReferenceCountedAccessor() noexcept = default;
+
+  template <class OtherSpace>
+  constexpr ReferenceCountedAccessor(
+      const ReferenceCountedAccessor<ElementType, OtherSpace>&) {}
 
   constexpr reference access(data_handle_type p, size_t i) const {
     return p.get()[i];
