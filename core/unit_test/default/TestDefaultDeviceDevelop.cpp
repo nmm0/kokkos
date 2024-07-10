@@ -16,9 +16,12 @@
 
 #include <gtest/gtest.h>
 
+#include <Kokkos_Pair.hpp>
+
 #include <Kokkos_Core.hpp>
 
 #include <TestDefaultDeviceType_Category.hpp>
+
 
 namespace Test {
 
@@ -31,5 +34,9 @@ TEST(defaultdevicetype, development_test) {
   auto prop = Kokkos::view_alloc("C");
   Kokkos::View<float*, Kokkos::LayoutRight> c(prop, Kokkos::LayoutRight(5));
   Kokkos::View<int*> b_um(b.data(), 5);
+  Kokkos::mdspan<int, Kokkos::dextents<int, 1>> mds(b.data(), 5);
+  auto sub_a = Kokkos::submdspan(mds, std::pair{1,3}); 
+  auto sub_b = Kokkos::submdspan(mds, std::array{1,3}); 
+  auto sub_c = Kokkos::submdspan(mds, Kokkos::pair{1,3}); 
 }
 }  // namespace Test
