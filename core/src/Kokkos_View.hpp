@@ -226,7 +226,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
 
   KOKKOS_INLINE_FUNCTION constexpr array_layout layout()
       const {
-    return Impl::array_layout_from_mapping<array_layout, typename base_t::mapping_type>(base_t::mapping());
+    return Impl::array_layout_from_mapping<array_layout, mdspan_type>(base_t::mapping());
   }
 
   KOKKOS_INLINE_FUNCTION constexpr size_t stride_0() const { return stride(0); }
