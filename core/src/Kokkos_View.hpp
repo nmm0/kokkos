@@ -160,6 +160,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   using array_layout         = typename traits::array_layout;
   using device_type          = typename traits::device_type;
   using pointer_type         = typename traits::value_type*;
+  using memory_traits        = typename traits::memory_traits;
 
   // typedefs from BasicView
   using mdspan_type    = typename base_t::mdspan_type;
@@ -223,9 +224,9 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   enum {Rank KOKKOS_DEPRECATED_WITH_COMMENT("Use rank instead.") = rank()};
 #endif
 
-  KOKKOS_INLINE_FUNCTION constexpr typename traits::array_layout layout()
+  KOKKOS_INLINE_FUNCTION constexpr array_layout layout()
       const {
-    return base_t::m_map.layout();
+    return Impl::array_layout_from_mapping<array_layout, typename base_t::mapping_type>(base_t::mapping());
   }
 
   KOKKOS_INLINE_FUNCTION constexpr size_t stride_0() const { return stride(0); }
@@ -247,7 +248,10 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
 
   template <typename iType>
   KOKKOS_INLINE_FUNCTION void stride(iType* const s) const {
-    base_t::m_map.stride(s);
+    if constexpr (rank() > 0) {
+      for(size_t r = 0; r<rank(); r++) s[r] = base_t::stride(r);
+      s[rank()] = s[rank()-1] * base_t::extent(rank()-1);
+    }
   }
 
   //----------------------------------------
@@ -258,11 +262,11 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
         std::is_lvalue_reference_v<reference_type>
   };
 
-  //  KOKKOS_INLINE_FUNCTION constexpr size_t span() const { return
-  //  required_span_size(); } KOKKOS_INLINE_FUNCTION bool span_is_contiguous()
-  //  const {
-  //    return is_exhaustive();
-  //  }
+  KOKKOS_INLINE_FUNCTION constexpr size_t span() const { return
+    base_t::mapping().required_span_size(); }
+  KOKKOS_INLINE_FUNCTION bool span_is_contiguous() const {
+    return base_t::is_exhaustive();
+  }
   KOKKOS_INLINE_FUNCTION constexpr bool is_allocated() const {
     return data() != nullptr;
   }
@@ -270,6 +274,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
     return base_t::data_handle();
   }
 
+  KOKKOS_INLINE_FUNCTION constexpr int extent_int(size_t r) const { return static_cast<int>(base_t::extent(r)); }
   //----------------------------------------
   // Allow specializations to query their specialized map
 
@@ -601,7 +606,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   // Memory span required to wrap these dimensions.
   static constexpr size_t required_allocation_size(
       typename traits::array_layout const& layout) {
-    return base_t::map_type::memory_span(layout);
+    return Impl::mapping_from_array_layout<typename base_t::mapping_type>(layout).required_span_size()*sizeof(value_type);
   }
 
   static constexpr size_t required_allocation_size(
@@ -611,7 +616,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
     static_assert(traits::array_layout::is_extent_constructible,
                   "Layout is not constructible from extent arguments. Use "
                   "overload taking a layout object instead.");
-    return base_t::map_type::memory_span(typename traits::array_layout(
+    return required_allocation_size(typename traits::array_layout(
         arg_N0, arg_N1, arg_N2, arg_N3, arg_N4, arg_N5, arg_N6, arg_N7));
   }
 
@@ -678,7 +683,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
  public:
   static KOKKOS_INLINE_FUNCTION size_t
   shmem_size(typename traits::array_layout const& arg_layout) {
-    return base_t::map_type::memory_span(arg_layout) + scratch_value_alignment;
+    return Impl::mapping_from_array_layout<typename base_t::mapping_type>(arg_layout)*sizeof(value_type) + scratch_value_alignment;
   }
 
   explicit KOKKOS_INLINE_FUNCTION View(
