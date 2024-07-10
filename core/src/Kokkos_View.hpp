@@ -149,17 +149,20 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
 
  public:
   // typedefs originally from ViewTraits
-  using data_type           = DataType;
-  using traits              = ViewTraits<DataType, Properties...>;
-  using const_data_type     = typename traits::const_data_type;
-  using non_const_data_type = typename traits::non_const_data_type;
-  using view_tracker_type   = Impl::ViewTracker<View>;
-  using array_layout        = typename traits::array_layout;
-  using device_type         = typename traits::device_type;
+  using traits               = ViewTraits<DataType, Properties...>;
+  using value_type           = typename traits::value_type;
+  using const_value_type     = typename traits::const_value_type;
+  using non_const_value_type = typename traits::non_const_value_type;
+  using data_type            = DataType;
+  using const_data_type      = typename traits::const_data_type;
+  using non_const_data_type  = typename traits::non_const_data_type;
+  using view_tracker_type    = Impl::ViewTracker<View>;
+  using array_layout         = typename traits::array_layout;
+  using device_type          = typename traits::device_type;
+  using pointer_type         = typename traits::value_type*;
 
   // typedefs from BasicView
   using mdspan_type    = typename base_t::mdspan_type;
-  using pointer_type   = typename base_t::data_handle_type;
   using reference_type = typename base_t::reference;
 
   //----------------------------------------
@@ -490,10 +493,12 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   template <class... P>
   explicit inline View(
       const Impl::ViewCtorProp<P...>& arg_prop,
-      std::enable_if_t<!Impl::ViewCtorProp<P...>::has_pointer,
-                       typename traits::array_layout> const& arg_layout)
+      typename traits::array_layout const& arg_layout)
       : base_t(arg_prop, Impl::mapping_from_array_layout<typename traits::array_layout, typename mdspan_type::mapping_type>(arg_layout)) {}
 
+  template<class ... Args>
+  View(pointer_type ptr, Args ... args)
+    : base_t(Kokkos::view_wrap(ptr), typename mdspan_type::mapping_type(typename mdspan_type::extents_type{args...})) {}
 #if 0
   // Wrap memory according to properties and array layout
   template <class... P>

@@ -226,6 +226,7 @@ class ReferenceCountedDataHandle {
     m_tracker.assign_allocated_record_to_uninitialized(rec);
     m_handle = static_cast<pointer>(get_record()->data());
   }
+  ReferenceCountedDataHandle(pointer ptr): m_tracker(), m_handle(ptr) {}
 
   ReferenceCountedDataHandle(const ReferenceCountedDataHandle&)     = default;
   ReferenceCountedDataHandle(ReferenceCountedDataHandle&&) noexcept = default;
@@ -240,6 +241,7 @@ class ReferenceCountedDataHandle {
   }
 
   pointer get() const noexcept { return m_handle; }
+  operator pointer() const noexcept { return m_handle; }
 
   bool has_record() const { return m_tracker.has_record(); }
   auto* get_record() const { return m_tracker.get_record<MemorySpace>(); }

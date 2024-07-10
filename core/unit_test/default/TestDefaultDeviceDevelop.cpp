@@ -30,5 +30,6 @@ TEST(defaultdevicetype, development_test) {
   Kokkos::View<int*> b("B", 5);
   auto prop = Kokkos::view_alloc("C");
   Kokkos::View<float*, Kokkos::LayoutRight> c(prop, Kokkos::LayoutRight(5));
+  Kokkos::View<int*> b_um(b.data(), 5);
 }
 }  // namespace Test
