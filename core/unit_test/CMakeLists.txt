@@ -97,6 +97,7 @@ SET(COMPILE_ONLY_SOURCES
   TestTeamMDRangePolicyCTAD.cpp
   TestNestedReducerCTAD.cpp
   view/TestExtentsDatatypeConversion.cpp
+  view/TestBasicViewMDSpanConversion.cpp
 )
 
 #testing if windows.h and Kokkos_Core.hpp can be included

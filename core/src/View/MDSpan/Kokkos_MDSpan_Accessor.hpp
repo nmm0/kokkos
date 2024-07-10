@@ -227,7 +227,12 @@ class ReferenceCountedDataHandle {
     m_tracker.assign_allocated_record_to_uninitialized(rec);
     m_handle = static_cast<pointer>(get_record()->data());
   }
-  ReferenceCountedDataHandle(pointer ptr): m_tracker(), m_handle(ptr) {}
+
+  template <class OtherElementType,
+            class = std::enable_if_t<std::is_convertible_v<
+                OtherElementType (*)[], value_type (*)[]>>>
+  ReferenceCountedDataHandle(OtherElementType* ptr)
+      : m_tracker(), m_handle(ptr) {}
 
   ReferenceCountedDataHandle(const ReferenceCountedDataHandle&)     = default;
   ReferenceCountedDataHandle(ReferenceCountedDataHandle&&) noexcept = default;
@@ -270,7 +275,12 @@ class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
     m_tracker.assign_allocated_record_to_uninitialized(rec);
     m_handle = static_cast<pointer>(get_record()->data());
   }
-  ReferenceCountedDataHandle(pointer ptr) : m_tracker(), m_handle(ptr) {}
+
+  template <class OtherElementType,
+            class = std::enable_if_t<std::is_convertible_v<
+                OtherElementType (*)[], value_type (*)[]>>>
+  ReferenceCountedDataHandle(OtherElementType* ptr)
+      : m_tracker(), m_handle(ptr) {}
 
   ReferenceCountedDataHandle(const ReferenceCountedDataHandle&)     = default;
   ReferenceCountedDataHandle(ReferenceCountedDataHandle&&) noexcept = default;
@@ -313,6 +323,12 @@ class ReferenceCountedAccessor {
 
   constexpr ReferenceCountedAccessor() noexcept = default;
 
+  template <class OtherElementType,
+            class = std::enable_if_t<std::is_convertible_v<
+                OtherElementType (*)[], element_type (*)[]>>>
+  constexpr ReferenceCountedAccessor(
+      const ReferenceCountedAccessor<OtherElementType, MemorySpace>&) {}
+
   constexpr reference access(data_handle_type p, size_t i) const {
     return p.get()[i];
   }
@@ -336,6 +352,12 @@ class ReferenceCountedAccessor<ElementType, AnonymousSpace> {
   template <class OtherSpace>
   constexpr ReferenceCountedAccessor(
       const ReferenceCountedAccessor<ElementType, OtherSpace>&) {}
+
+  template <class OtherElementType, class OtherSpace,
+            class = std::enable_if_t<std::is_convertible_v<
+                OtherElementType (*)[], element_type (*)[]>>>
+  constexpr ReferenceCountedAccessor(
+      const ReferenceCountedAccessor<OtherElementType, OtherSpace>&) {}
 
   constexpr reference access(data_handle_type p, size_t i) const {
     return p.get()[i];
