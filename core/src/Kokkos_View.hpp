@@ -495,9 +495,6 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
 
  public:
 
-  template<class ... Args>
-  KOKKOS_INLINE_FUNCTION View(Args ... args): base_t(args...) {}
-
   //----------------------------------------
   // Allocation according to allocation properties and array layout
 
@@ -560,7 +557,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
                   "Layout is not constructible from extent arguments. Use "
                   "overload taking a layout object instead.");
   }
-
+#endif
   // Allocate with label and layout
   template <typename Label>
   explicit inline View(
@@ -589,7 +586,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
                   "Layout is not constructible from extent arguments. Use "
                   "overload taking a layout object instead.");
   }
-
+#if 0
   // Construct view from ViewTracker and map
   // This should be the preferred method because future extensions may need to
   // use the ViewTracker class.
@@ -715,15 +712,14 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
       const size_t arg_N5 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
       const size_t arg_N6 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
       const size_t arg_N7 = KOKKOS_IMPL_CTOR_DEFAULT_ARG)
-      : View(
-            Impl::ViewCtorProp<pointer_type>(
-                reinterpret_cast<pointer_type>(arg_space.get_shmem_aligned(
-                    base_t::map_type::memory_span(typename traits::array_layout(
-                        arg_N0, arg_N1, arg_N2, arg_N3, arg_N4, arg_N5, arg_N6,
-                        arg_N7)),
-                    scratch_value_alignment))),
-            typename traits::array_layout(arg_N0, arg_N1, arg_N2, arg_N3,
-                                          arg_N4, arg_N5, arg_N6, arg_N7)) {
+      : View(Impl::ViewCtorProp<pointer_type>(
+                 reinterpret_cast<pointer_type>(arg_space.get_shmem_aligned(
+                     required_allocation_size(typename traits::array_layout(
+                         arg_N0, arg_N1, arg_N2, arg_N3, arg_N4, arg_N5, arg_N6,
+                         arg_N7)),
+                     scratch_value_alignment))),
+             typename traits::array_layout(arg_N0, arg_N1, arg_N2, arg_N3,
+                                           arg_N4, arg_N5, arg_N6, arg_N7)) {
     static_assert(traits::array_layout::is_extent_constructible,
                   "Layout is not constructible from extent arguments. Use "
                   "overload taking a layout object instead.");
