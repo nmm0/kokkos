@@ -491,7 +491,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   template <class RT, class... RP, class Arg0, class... Args>
   KOKKOS_INLINE_FUNCTION View(const View<RT, RP...>& src_view, const Arg0 arg0,
                               Args... args)
-      : base_t(src_view, arg0, args...) {}
+      : base_t(Impl::subview_ctor_tag, src_view, arg0, args...) {}
 
  public:
 

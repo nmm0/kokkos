@@ -31,7 +31,32 @@ static_assert(false,
 #include <impl/Kokkos_ViewCtor.hpp>
 
 namespace Kokkos {
-namespace Impl {}  // namespace Impl
+namespace Impl {
+    constexpr inline struct subview_ctor_tag_t {} subview_ctor_tag;
+
+    template <class T>
+    struct KokkosSliceToMDSpanSliceImpl
+    {
+        using type = T;
+        static constexpr decltype(auto) transform(const T &s) {
+            return s;
+        }
+    };
+
+    template <>
+    struct KokkosSliceToMDSpanSliceImpl<Kokkos::ALL_t> {
+        using type = full_extent_t;
+        static constexpr decltype(auto) transform(Kokkos::ALL_t) { return full_extent; }
+    };
+
+    template <class T>
+    using kokkos_slice_to_mdspan_slice = typename KokkosSliceToMDSpanSliceImpl<T>::type;
+
+    template <class T>
+    constexpr decltype(auto) transform_kokkos_slice_to_mdspan_slice(const T &s) {
+        return KokkosSliceToMDSpanSliceImpl<T>::transform(s);
+    }
+}  // namespace Impl
 
 template <class ElementType, class Extents, class LayoutPolicy,
           class AccessorPolicy>
@@ -108,20 +133,31 @@ class BasicView
     }
     mdspan_type(
             data_handle_type(Impl::make_shared_allocation_record<ElementType>(
-                arg_mapping, 
+                arg_mapping,
                 Impl::get_property<Impl::LabelTag>(prop_copy),
                 Impl::get_property<Impl::MemorySpaceTag>(prop_copy),
                 &Impl::get_property<Impl::ExecutionSpaceTag>(prop_copy),
                 std::integral_constant<bool,alloc_prop::allow_padding>(), std::integral_constant<bool, alloc_prop::initialize>())),
             arg_mapping);
   }
-  
+
   template <class... P>
   explicit inline BasicView(
       const Impl::ViewCtorProp<P...>& arg_prop,
       std::enable_if_t<Impl::ViewCtorProp<P...>::has_pointer,
                        typename mdspan_type::mapping_type> const& arg_mapping)
    : mdspan_type(data_handle_type(Impl::get_property<Impl::PointerTag>(arg_prop)), arg_mapping) {}
+
+ protected:
+  template <class OtherElementType, class OtherExtents, class OtherLayoutPolicy,
+            class OtherAccessorPolicy, class... SliceSpecifiers>
+  KOKKOS_INLINE_FUNCTION BasicView(
+      Impl::subview_ctor_tag_t,
+      const BasicView<OtherElementType, OtherExtents, OtherLayoutPolicy,
+                      OtherAccessorPolicy> &src_view,
+      SliceSpecifiers... slices)
+      : mdspan_type(submdspan(
+            src_view, Impl::transform_kokkos_slice_to_mdspan_slice(slices)...)) {}
 
  private:
   template <typename E, bool AllowPadding, bool Initialize>
