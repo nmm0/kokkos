@@ -42,4 +42,10 @@ static_assert(
                           Kokkos::Experimental::layout_right_padded<>,
                           Kokkos::Impl::checked_reference_counted_accessor<
                               const long long, Kokkos::HostSpace>>>);
+
+using test_atomic_view = Kokkos::View<double *, Kokkos::Serial, Kokkos::MemoryTraits<Kokkos::Atomic>>;
+static_assert(std::is_same_v<
+              decltype(std::declval<test_atomic_view>()(std::declval<int>())),
+              desul::AtomicRef<double, desul::MemoryOrderRelaxed,
+                               desul::MemoryScopeDevice>>);
 #endif

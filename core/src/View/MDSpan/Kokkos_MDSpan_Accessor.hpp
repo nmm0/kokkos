@@ -238,6 +238,13 @@ class ReferenceCountedDataHandle {
             class = std::enable_if_t<std::is_convertible_v<
                 OtherElementType (*)[], value_type (*)[]>>>
   ReferenceCountedDataHandle(
+      const ReferenceCountedDataHandle &other, OtherElementType* ptr)
+      : m_tracker(other.m_tracker), m_handle(ptr) {}
+
+  template <class OtherElementType,
+            class = std::enable_if_t<std::is_convertible_v<
+                OtherElementType (*)[], value_type (*)[]>>>
+  ReferenceCountedDataHandle(
       const ReferenceCountedDataHandle<OtherElementType, memory_space>& other)
       : m_tracker(other.m_tracker), m_handle(other.m_handle) {}
 
@@ -246,12 +253,6 @@ class ReferenceCountedDataHandle {
   ReferenceCountedDataHandle& operator=(const ReferenceCountedDataHandle&) =
       default;
   ReferenceCountedDataHandle& operator=(ReferenceCountedDataHandle&&) = default;
-
-  ReferenceCountedDataHandle with_offset(size_t offset) const {
-    auto ret     = *this;
-    ret.m_handle += offset;
-    return ret;
-  }
 
   pointer get() const noexcept { return m_handle; }
   explicit operator pointer() const noexcept { return m_handle; }
@@ -265,6 +266,10 @@ class ReferenceCountedDataHandle {
  private:
   template <class OtherElementType, class OtherSpace>
   friend class ReferenceCountedDataHandle;
+
+  template <class OtherElementType, class OtherSpace, class NestedAccessor>
+  friend class ReferenceCountedAccessor;
+
   SharedAllocationTracker m_tracker;
   pointer m_handle = nullptr;
 };
@@ -289,6 +294,12 @@ class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
   ReferenceCountedDataHandle(OtherElementType* ptr)
       : m_tracker(), m_handle(ptr) {}
 
+  template <class OtherElementType,
+            class = std::enable_if_t<std::is_convertible_v<
+                OtherElementType (*)[], value_type (*)[]>>>
+  ReferenceCountedDataHandle(const ReferenceCountedDataHandle &other, OtherElementType* ptr)
+      : m_tracker(other.m_tracker), m_handle(ptr) {}
+
   ReferenceCountedDataHandle(const ReferenceCountedDataHandle&)     = default;
   ReferenceCountedDataHandle(ReferenceCountedDataHandle&&) noexcept = default;
   ReferenceCountedDataHandle& operator=(const ReferenceCountedDataHandle&) =
@@ -301,12 +312,6 @@ class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
   ReferenceCountedDataHandle(
       const ReferenceCountedDataHandle<OtherElementType, OtherSpace>& other)
       : m_tracker(other.m_tracker), m_handle(other.m_handle) {}
-
-  ReferenceCountedDataHandle with_offset(size_t offset) const {
-    auto ret = *this;
-    ret.m_handle += offset;
-    return ret;
-  }
 
   pointer get() const noexcept { return m_handle; }
   explicit operator pointer() const noexcept { return m_handle; }
@@ -325,59 +330,75 @@ class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
   pointer m_handle = nullptr;
 };
 
-template <class ElementType, class MemorySpace>
+template <class ElementType, class MemorySpace, class NestedAccessor>
 class ReferenceCountedAccessor {
  public:
   using element_type     = ElementType;
   using data_handle_type = ReferenceCountedDataHandle<ElementType, MemorySpace>;
-  using reference        = typename data_handle_type::reference;
+  using reference        = typename NestedAccessor::reference;
   using offset_policy    = ReferenceCountedAccessor;
 
   constexpr ReferenceCountedAccessor() noexcept = default;
 
-  template <class OtherElementType,
-            class = std::enable_if_t<std::is_convertible_v<
-                OtherElementType (*)[], element_type (*)[]>>>
+  template <
+      class OtherElementType, class OtherNestedAccessor,
+      class = std::enable_if_t<
+          std::is_convertible_v<OtherElementType (*)[], element_type (*)[]> &&
+          std::is_constructible_v<NestedAccessor, OtherNestedAccessor>>>
   constexpr ReferenceCountedAccessor(
-      const ReferenceCountedAccessor<OtherElementType, MemorySpace>&) {}
- 
+      const ReferenceCountedAccessor<OtherElementType, MemorySpace,
+                                     OtherNestedAccessor>&) {}
+
   template <class OtherElementType,
             class = std::enable_if_t<std::is_convertible_v<
                 OtherElementType (*)[], element_type (*)[]>>>
   constexpr ReferenceCountedAccessor(
       const default_accessor<OtherElementType>&) {}
 
-  operator default_accessor<element_type>() const { return {}; }
+  operator NestedAccessor() const { return m_nested_acc; }
 
   constexpr reference access(data_handle_type p, size_t i) const {
-    return p.get()[i];
+    return m_nested_acc.access(p.get(), i);
   }
 
   constexpr data_handle_type offset(data_handle_type p, size_t i) const {
-    return p.with_offset(i);
+    return data_handle_type(p, m_nested_acc.offset(p.get(), i));
   }
+
+ private:
+#ifdef _MDSPAN_NO_UNIQUE_ADDRESS
+  _MDSPAN_NO_UNIQUE_ADDRESS
+#else
+  [[no_unique_address]]
+#endif
+  NestedAccessor m_nested_acc;
 };
 
-template <class ElementType>
-class ReferenceCountedAccessor<ElementType, AnonymousSpace> {
+template <class ElementType, class NestedAccessor>
+class ReferenceCountedAccessor<ElementType, AnonymousSpace, NestedAccessor> {
  public:
   using element_type = ElementType;
   using data_handle_type =
       ReferenceCountedDataHandle<ElementType, AnonymousSpace>;
-  using reference     = typename data_handle_type::reference;
+  using reference     = typename NestedAccessor::reference;
   using offset_policy = ReferenceCountedAccessor;
 
   constexpr ReferenceCountedAccessor() noexcept = default;
 
-  template <class OtherSpace>
+  template <class OtherSpace, class OtherNestedAccessor,
+            class = std::enable_if_t<
+                std::is_constructible_v<NestedAccessor, OtherNestedAccessor>>>
   constexpr ReferenceCountedAccessor(
-      const ReferenceCountedAccessor<ElementType, OtherSpace>&) {}
+      const ReferenceCountedAccessor<ElementType, OtherSpace,
+                                     OtherNestedAccessor>&) {}
 
-  template <class OtherElementType, class OtherSpace,
-            class = std::enable_if_t<std::is_convertible_v<
-                OtherElementType (*)[], element_type (*)[]>>>
+  template <
+      class OtherElementType, class OtherSpace, class OtherNestedAccessor,
+      class = std::enable_if_t<
+          std::is_convertible_v<OtherElementType (*)[], element_type (*)[]> &&
+          std::is_constructible_v<NestedAccessor, OtherNestedAccessor>>>
   constexpr ReferenceCountedAccessor(
-      const ReferenceCountedAccessor<OtherElementType, OtherSpace>&) {}
+      const ReferenceCountedAccessor<OtherElementType, OtherSpace, OtherNestedAccessor>&) {}
 
   template <class OtherElementType,
             class = std::enable_if_t<std::is_convertible_v<
@@ -385,21 +406,41 @@ class ReferenceCountedAccessor<ElementType, AnonymousSpace> {
   constexpr ReferenceCountedAccessor(
       const default_accessor<OtherElementType>&) {}
 
-  operator default_accessor<element_type>() const { return {}; }
+  operator NestedAccessor() const { return m_nested_acc; }
 
   constexpr reference access(data_handle_type p, size_t i) const {
-    return p.get()[i];
+    return m_nested_acc.access(p.get(), i);
   }
 
   constexpr data_handle_type offset(data_handle_type p, size_t i) const {
-    return p.with_offset(i);
+    return data_handle_type(p, m_nested_acc.offset(p.get(), i));
   }
+
+ private:
+#ifdef _MDSPAN_NO_UNIQUE_ADDRESS
+  _MDSPAN_NO_UNIQUE_ADDRESS
+#else
+  [[no_unique_address]]
+#endif
+  NestedAccessor m_nested_acc;
 };
 
 template <class ElementType, class MemorySpace>
 using checked_reference_counted_accessor =
     SpaceAwareAccessor<MemorySpace,
-                       ReferenceCountedAccessor<ElementType, MemorySpace>>;
+                       ReferenceCountedAccessor<ElementType, MemorySpace,
+                                                default_accessor<ElementType>>>;
+
+template <class ElementType, class MemorySpace,
+          class MemoryScope = desul::MemoryScopeDevice>
+using checked_atomic_accessor_relaxed = SpaceAwareAccessor<
+    MemorySpace, AtomicAccessorRelaxed<ElementType>>;
+
+template <class ElementType, class MemorySpace,
+          class MemoryScope = desul::MemoryScopeDevice>
+using checked_reference_counted_atomic_accessor_relaxed = SpaceAwareAccessor<
+    MemorySpace, ReferenceCountedAccessor<ElementType, MemorySpace,
+                                          AtomicAccessorRelaxed<ElementType>>>;
 
 }  // namespace Impl
 }  // namespace Kokkos

@@ -120,14 +120,32 @@ template <class Traits, class Enabled = void>
 struct AccessorFromViewTraits {
   using type =
       SpaceAwareAccessor<typename Traits::memory_space,
-                         Kokkos::default_accessor<typename Traits::value_type>>;
+                         default_accessor<typename Traits::value_type>>;
 };
 
 template <class Traits>
-struct AccessorFromViewTraits<Traits, std::enable_if_t<Traits::is_managed>> {
+struct AccessorFromViewTraits<
+    Traits,
+    std::enable_if_t<Traits::is_managed && !Traits::memory_traits::is_atomic>> {
   using type =
       checked_reference_counted_accessor<typename Traits::value_type,
                                          typename Traits::memory_space>;
+};
+
+template <class Traits>
+struct AccessorFromViewTraits<
+    Traits,
+    std::enable_if_t<Traits::is_managed && Traits::memory_traits::is_atomic>> {
+  using type = checked_reference_counted_atomic_accessor_relaxed<
+      typename Traits::value_type, typename Traits::memory_space>;
+};
+
+template <class Traits>
+struct AccessorFromViewTraits<
+    Traits,
+    std::enable_if_t<!Traits::is_managed && Traits::memory_traits::is_atomic>> {
+  using type = checked_atomic_accessor_relaxed<typename Traits::value_type,
+                                               typename Traits::memory_space>;
 };
 
 template <class Traits>
