@@ -340,6 +340,14 @@ class ReferenceCountedAccessor {
                 OtherElementType (*)[], element_type (*)[]>>>
   constexpr ReferenceCountedAccessor(
       const ReferenceCountedAccessor<OtherElementType, MemorySpace>&) {}
+ 
+  template <class OtherElementType,
+            class = std::enable_if_t<std::is_convertible_v<
+                OtherElementType (*)[], element_type (*)[]>>>
+  constexpr ReferenceCountedAccessor(
+      const default_accessor<OtherElementType>&) {}
+
+  operator default_accessor<element_type>() const { return {}; }
 
   constexpr reference access(data_handle_type p, size_t i) const {
     return p.get()[i];
@@ -370,6 +378,14 @@ class ReferenceCountedAccessor<ElementType, AnonymousSpace> {
                 OtherElementType (*)[], element_type (*)[]>>>
   constexpr ReferenceCountedAccessor(
       const ReferenceCountedAccessor<OtherElementType, OtherSpace>&) {}
+
+  template <class OtherElementType,
+            class = std::enable_if_t<std::is_convertible_v<
+                OtherElementType (*)[], element_type (*)[]>>>
+  constexpr ReferenceCountedAccessor(
+      const default_accessor<OtherElementType>&) {}
+
+  operator default_accessor<element_type>() const { return {}; }
 
   constexpr reference access(data_handle_type p, size_t i) const {
     return p.get()[i];

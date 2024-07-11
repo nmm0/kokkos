@@ -510,21 +510,12 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
   template<class ... Args>
   View(pointer_type ptr, Args ... args)
     : base_t(Kokkos::view_wrap(ptr), typename mdspan_type::mapping_type(typename mdspan_type::extents_type{args...})) {}
-#if 0
-  // Wrap memory according to properties and array layout
-  template <class... P>
-  explicit KOKKOS_INLINE_FUNCTION View(
-      const Impl::ViewCtorProp<P...>& arg_prop,
-      std::enable_if_t<Impl::ViewCtorProp<P...>::has_pointer,
-                       typename traits::array_layout> const& arg_layout)
-      : base_t(arg_prop, arg_layout) {}
 
-  // Simple dimension-only layout
+  // Constructor which allows always 8 sizes should be deprecated
   template <class... P>
   explicit inline View(
       const Impl::ViewCtorProp<P...>& arg_prop,
-      std::enable_if_t<!Impl::ViewCtorProp<P...>::has_pointer, size_t> const
-          arg_N0          = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
+      const size_t arg_N0 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
       const size_t arg_N1 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
       const size_t arg_N2 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
       const size_t arg_N3 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
@@ -539,6 +530,16 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
                   "Layout is not constructible from extent arguments. Use "
                   "overload taking a layout object instead.");
   }
+
+#if 0
+  // Wrap memory according to properties and array layout
+  template <class... P>
+  explicit KOKKOS_INLINE_FUNCTION View(
+      const Impl::ViewCtorProp<P...>& arg_prop,
+      std::enable_if_t<Impl::ViewCtorProp<P...>::has_pointer,
+                       typename traits::array_layout> const& arg_layout)
+      : base_t(arg_prop, arg_layout) {}
+
 
   template <class... P>
   explicit KOKKOS_INLINE_FUNCTION View(

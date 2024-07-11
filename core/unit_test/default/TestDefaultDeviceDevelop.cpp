@@ -34,6 +34,8 @@ TEST(defaultdevicetype, development_test) {
   auto prop = Kokkos::view_alloc("C");
   Kokkos::View<float*, Kokkos::LayoutRight> c(prop, Kokkos::LayoutRight(5));
   Kokkos::View<int*> b_um(b.data(), 5);
+  Kokkos::View<int*, Kokkos::MemoryTraits<Kokkos::Atomic>> b_atomic(b);
+  Kokkos::View<int*, Kokkos::MemoryTraits<Kokkos::Unmanaged>> b_unmanaged(b);
   Kokkos::mdspan<int, Kokkos::dextents<int, 1>> mds(b.data(), 5);
   auto sub_a = Kokkos::submdspan(mds, std::pair{1,3}); 
   auto sub_b = Kokkos::submdspan(mds, std::array{1,3}); 
