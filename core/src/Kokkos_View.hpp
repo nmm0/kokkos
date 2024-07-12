@@ -736,12 +736,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
                std::enable_if_t<
                    !std::is_same_v<Impl::UnsupportedKokkosArrayLayout, U> >* =
                    nullptr)
-      : View(mds.data_handle(),
-             Impl::array_layout_from_mapping<
-                 typename traits::array_layout,
-                 typename Impl::MDSpanViewTraits<traits>::mdspan_type>(
-                 mds.mapping())) {
-  }
+      : base_t(mds) {}
 
   template <class ElementType, class ExtentsType, class LayoutType,
             class AccessorType>
@@ -754,8 +749,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
 #endif
           View(const Kokkos::mdspan<ElementType, ExtentsType, LayoutType,
                                     AccessorType>& mds)
-      : View(typename Impl::MDSpanViewTraits<traits>::mdspan_type(mds)) {
-  }
+      : base_t(mds) {}
 
 public:
  //----------------------------------------
