@@ -70,6 +70,13 @@ struct SpaceAwareAccessor {
   KOKKOS_FUNCTION
   explicit operator NestedAccessor() const { return nested_acc; }
 
+  template<class OtherElementType,
+   class = std::enable_if_t<std::is_convertible_v<
+                element_type(*) [], OtherElementType (*)[]> &&
+           std::is_convertible_v<nested_accessor_type, Kokkos::default_accessor<OtherElementType>>>>
+  KOKKOS_FUNCTION
+  operator Kokkos::default_accessor<OtherElementType>() const { return nested_acc; }
+
   KOKKOS_FUNCTION
   constexpr reference access(data_handle_type p, size_t i) const noexcept {
     Kokkos::Impl::runtime_check_memory_access_violation<memory_space>(
@@ -137,6 +144,14 @@ struct SpaceAwareAccessor<AnonymousSpace, NestedAccessor> {
 
   KOKKOS_FUNCTION
   explicit operator NestedAccessor() const { return nested_acc; }
+  
+  template<class OtherElementType,
+   class = std::enable_if_t<std::is_convertible_v<
+                element_type(*) [], OtherElementType (*)[]> &&
+           std::is_convertible_v<nested_accessor_type, Kokkos::default_accessor<OtherElementType>>>>
+  KOKKOS_FUNCTION
+  operator Kokkos::default_accessor<OtherElementType>() const { return nested_acc; }
+
 
   KOKKOS_FUNCTION
   constexpr reference access(data_handle_type p, size_t i) const noexcept {

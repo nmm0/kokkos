@@ -40,5 +40,8 @@ TEST(defaultdevicetype, development_test) {
   auto sub_a = Kokkos::submdspan(mds, std::pair{1,3}); 
   auto sub_b = Kokkos::submdspan(mds, std::array{1,3}); 
   auto sub_c = Kokkos::submdspan(mds, Kokkos::pair{1,3}); 
+  auto acc = c.accessor();
+  const decltype(acc) acc_const = acc;
+  const Kokkos::default_accessor<float> acc_def = acc_const;//static_cast<Kokkos::default_accessor<float>>(acc_const);
 }
 }  // namespace Test
