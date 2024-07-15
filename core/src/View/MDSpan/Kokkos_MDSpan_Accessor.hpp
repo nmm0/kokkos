@@ -144,7 +144,7 @@ struct SpaceAwareAccessor<AnonymousSpace, NestedAccessor> {
 
   KOKKOS_FUNCTION
   explicit operator NestedAccessor() const { return nested_acc; }
-  
+
   template<class OtherElementType,
    class = std::enable_if_t<std::is_convertible_v<
                 element_type(*) [], OtherElementType (*)[]> &&
@@ -278,6 +278,16 @@ class ReferenceCountedDataHandle {
 
   std::string get_label() const { return m_tracker.get_label<memory_space>(); }
 
+  friend bool operator==(const ReferenceCountedDataHandle& lhs,
+                         const value_type* rhs) {
+    return lhs.m_handle == rhs;
+  }
+
+  friend bool operator==(const value_type* lhs,
+                         const ReferenceCountedDataHandle& rhs) {
+    return lhs == rhs.m_handle;
+  }
+
  private:
   template <class OtherElementType, class OtherSpace>
   friend class ReferenceCountedDataHandle;
@@ -337,6 +347,16 @@ class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
 
   std::string get_label() const { return m_tracker.get_label<memory_space>(); }
 
+  friend bool operator==(const ReferenceCountedDataHandle& lhs,
+                         const value_type* rhs) {
+    return lhs.m_handle == rhs;
+  }
+
+  friend bool operator==(const value_type* lhs,
+                         const ReferenceCountedDataHandle& rhs) {
+    return lhs == rhs.m_handle;
+  }
+
  private:
   template <class OtherElementType, class OtherSpace>
   friend class ReferenceCountedDataHandle;
@@ -344,6 +364,17 @@ class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
   SharedAllocationTracker m_tracker;
   pointer m_handle = nullptr;
 };
+
+template <class ElementType, class MemorySpace, class NestedAccessor>
+class ReferenceCountedAccessor;
+
+template <class Accessor>
+struct IsReferenceCountedAccessorImpl : std::false_type {};
+
+template <class ElementType, class MemorySpace, class NestedAccessor>
+struct IsReferenceCountedAccessorImpl<
+    ReferenceCountedAccessor<ElementType, MemorySpace, NestedAccessor>>
+    : std::true_type {};
 
 template <class ElementType, class MemorySpace, class NestedAccessor>
 class ReferenceCountedAccessor {
@@ -370,7 +401,13 @@ class ReferenceCountedAccessor {
   constexpr ReferenceCountedAccessor(
       const default_accessor<OtherElementType>&) {}
 
-  operator NestedAccessor() const { return m_nested_acc; }
+  template <class DstAccessor,
+            typename = std::enable_if_t<
+                !IsReferenceCountedAccessorImpl<DstAccessor>::value &&
+                std::is_convertible_v<NestedAccessor, DstAccessor>>>
+  operator DstAccessor() const {
+    return m_nested_acc;
+  }
 
   constexpr reference access(data_handle_type p, size_t i) const {
     return m_nested_acc.access(p.get(), i);
@@ -421,7 +458,13 @@ class ReferenceCountedAccessor<ElementType, AnonymousSpace, NestedAccessor> {
   constexpr ReferenceCountedAccessor(
       const default_accessor<OtherElementType>&) {}
 
-  operator NestedAccessor() const { return m_nested_acc; }
+  template <class DstAccessor,
+            typename = std::enable_if_t<
+                !IsReferenceCountedAccessorImpl<DstAccessor>::value &&
+                std::is_convertible_v<NestedAccessor, DstAccessor>>>
+  operator DstAccessor() const {
+    return m_nested_acc;
+  }
 
   constexpr reference access(data_handle_type p, size_t i) const {
     return m_nested_acc.access(p.get(), i);

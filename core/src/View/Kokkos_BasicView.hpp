@@ -158,8 +158,8 @@ class BasicView
       SliceSpecifiers... slices)
       : mdspan_type(submdspan(
             src_view, Impl::transform_kokkos_slice_to_mdspan_slice(slices)...)) {}
- 
- public: 
+
+ public:
   //----------------------------------------
   // Conversion to MDSpan
   template <class OtherElementType, class OtherExtents, class OtherLayoutPolicy,
@@ -172,22 +172,38 @@ class BasicView
     return mdspan_type(*this);
   }
 
-  template <class OtherAccessorType = 
-    Kokkos::default_accessor<typename mdspan_type::element_type>,
-      //Impl::SpaceAwareAccessor<
-      //          memory_space,
-      //          Kokkos::default_accessor<typename mdspan_type::element_type>>,
-            typename = std::enable_if_t<std::is_assignable_v<
+  // Here we use an overload instead of a default parameter as a workaround
+  // to a potential compiler bug with clang 17. It may be present in other compilers
+  template <class OtherAccessorType = AccessorPolicy,
+            typename                = std::enable_if_t<std::is_assignable_v<
                 typename mdspan_type::data_handle_type,
                 typename OtherAccessorType::data_handle_type>>>
-  KOKKOS_INLINE_FUNCTION constexpr auto to_mdspan(
-      const OtherAccessorType& other_accessor =
-          static_cast<OtherAccessorType>(mdspan_type::accessor())) {
+  KOKKOS_INLINE_FUNCTION constexpr auto to_mdspan() {
     using ret_mdspan_type =
         mdspan<typename mdspan_type::element_type,
                typename mdspan_type::extents_type,
                typename mdspan_type::layout_type, OtherAccessorType>;
-    return ret_mdspan_type(static_cast<typename OtherAccessorType::data_handle_type>(mdspan_type::data_handle()), mdspan_type::mapping(), other_accessor);
+    return ret_mdspan_type(
+        static_cast<typename OtherAccessorType::data_handle_type>(
+            mdspan_type::data_handle()),
+        mdspan_type::mapping(),
+        static_cast<OtherAccessorType>(mdspan_type::accessor()));
+  }
+
+  template <class OtherAccessorType = AccessorPolicy,
+            typename                = std::enable_if_t<std::is_assignable_v<
+                typename mdspan_type::data_handle_type,
+                typename OtherAccessorType::data_handle_type>>>
+  KOKKOS_INLINE_FUNCTION constexpr auto to_mdspan(
+      const OtherAccessorType &other_accessor) {
+    using ret_mdspan_type =
+        mdspan<typename mdspan_type::element_type,
+               typename mdspan_type::extents_type,
+               typename mdspan_type::layout_type, OtherAccessorType>;
+    return ret_mdspan_type(
+        static_cast<typename OtherAccessorType::data_handle_type>(
+            mdspan_type::data_handle()),
+        mdspan_type::mapping(), other_accessor);
   }
 
   void assign_data(element_type* ptr) {
