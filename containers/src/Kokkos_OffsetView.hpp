@@ -24,6 +24,7 @@
 #include <Kokkos_Core.hpp>
 
 #include <Kokkos_View.hpp>
+#include <View/MDSpan/Kokkos_MDSpan_Accessor.hpp>
 
 namespace Kokkos {
 
@@ -776,7 +777,9 @@ class OffsetView : public ViewTraits<DataType, Properties...> {
  public:
   KOKKOS_FUNCTION
   view_type view() const {
-    view_type v(m_track, m_map);
+    using mdspan_type = typename view_type::mdspan_type;
+    using data_handle_type = typename view_type::data_handle_type;
+    view_type v(data_handle_type(m_track, data()), Kokkos::Impl::mapping_from_view_mapping<mdspan_type>(m_map));
     return v;
   }
 

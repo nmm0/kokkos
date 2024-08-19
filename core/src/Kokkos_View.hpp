@@ -286,12 +286,12 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
     using offset_type = typename map_type::offset_type;
     return map_type(
         data(),
-        offset_type((std::integral_constant<unsigned, 0>(), layout())));
+        offset_type(std::integral_constant<unsigned, 0>(), layout()));
   }
 
   KOKKOS_INLINE_FUNCTION
   const Kokkos::Impl::SharedAllocationTracker& impl_track() const {
-    return base_t::m_track.m_tracker;
+    return base_t::data_handle().tracker();
   }
   //----------------------------------------
 
@@ -461,6 +461,10 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
     return *this;
   }
 
+  View(typename base_t::data_handle_type p,
+       const typename base_t::mapping_type& m)
+      : base_t(p, m){};
+
   //----------------------------------------
   // Compatible view copy constructor and assignment
   // may assign unmanaged from managed.
@@ -506,7 +510,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
 
   template<class ... Args>
   View(pointer_type ptr, Args ... args)
-    : base_t(Kokkos::view_wrap(ptr), typename mdspan_type::mapping_type(typename mdspan_type::extents_type{args...})) {}
+    : View(Kokkos::view_wrap(ptr), args...) {}
 
   // Constructor which allows always 8 sizes should be deprecated
   template <class... P>
@@ -528,7 +532,6 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
                   "overload taking a layout object instead.");
   }
 
-#if 0
   // Wrap memory according to properties and array layout
   template <class... P>
   explicit KOKKOS_INLINE_FUNCTION View(
@@ -537,7 +540,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
                        typename traits::array_layout> const& arg_layout)
       : base_t(arg_prop, arg_layout) {}
 
-
+#if 0
   template <class... P>
   explicit KOKKOS_INLINE_FUNCTION View(
       const Impl::ViewCtorProp<P...>& arg_prop,

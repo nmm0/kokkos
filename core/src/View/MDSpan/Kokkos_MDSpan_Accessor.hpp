@@ -243,6 +243,10 @@ class ReferenceCountedDataHandle {
     m_handle = static_cast<pointer>(get_record()->data());
   }
 
+  ReferenceCountedDataHandle(const SharedAllocationTracker& tracker,
+                             pointer data_handle)
+      : m_tracker(tracker), m_handle(data_handle) {}
+
   template <class OtherElementType,
             class = std::enable_if_t<std::is_convertible_v<
                 OtherElementType (*)[], value_type (*)[]>>>
@@ -277,6 +281,7 @@ class ReferenceCountedDataHandle {
   int use_count() const noexcept { return m_tracker.use_count(); }
 
   std::string get_label() const { return m_tracker.get_label<memory_space>(); }
+  const SharedAllocationTracker& tracker() const noexcept { return m_tracker; }
 
   friend bool operator==(const ReferenceCountedDataHandle& lhs,
                          const value_type* rhs) {
@@ -313,6 +318,10 @@ class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
     m_handle = static_cast<pointer>(get_record()->data());
   }
 
+  ReferenceCountedDataHandle(const SharedAllocationTracker& tracker,
+                             pointer data_handle)
+      : m_tracker(tracker), m_handle(data_handle) {}
+
   template <class OtherElementType,
             class = std::enable_if_t<std::is_convertible_v<
                 OtherElementType (*)[], value_type (*)[]>>>
@@ -346,6 +355,7 @@ class ReferenceCountedDataHandle<ElementType, AnonymousSpace> {
   int use_count() const noexcept { return m_tracker.use_count(); }
 
   std::string get_label() const { return m_tracker.get_label<memory_space>(); }
+  const SharedAllocationTracker &tracker() const noexcept { return m_tracker; }
 
   friend bool operator==(const ReferenceCountedDataHandle& lhs,
                          const value_type* rhs) {
