@@ -303,7 +303,7 @@ class View : public Impl::BasicViewFromTraits<DataType, Properties...>::type {
       Is... is) {
     static_assert(sizeof...(Is) <= 8 - rank);
     static_assert(Kokkos::Impl::are_integral<Is...>::value);
-    if (!((is == static_cast<IS>(0)) && ... && true))
+    if (!((is == static_cast<Is>(0)) && ... && true))
       Kokkos::abort("Extra arguments to Kokkos::access must be zero");
   }
 #else
