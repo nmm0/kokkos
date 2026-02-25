@@ -14,8 +14,6 @@ static_assert(false,
 // Needed for 'is_space<S>::host_mirror_space
 #include <Kokkos_Core_fwd.hpp>
 
-#include <Kokkos_DetectionIdiom.hpp>
-
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
@@ -117,16 +115,13 @@ namespace Kokkos {
 #define KOKKOS_IMPL_DEFINE_TRAIT_FROM_TYPEDEF(TYPEDEF)         \
   template <typename T>                                        \
   struct is_##TYPEDEF {                                        \
-   private:                                                    \
-    template <typename U>                                      \
-    using have_t = typename U::TYPEDEF;                        \
-    template <typename U>                                      \
-    using have_type_t = typename U::TYPEDEF##_type;            \
-                                                               \
-   public:                                                     \
-    static constexpr bool value =                              \
-        std::is_base_of_v<detected_t<have_t, T>, T> ||         \
-        std::is_base_of_v<detected_t<have_type_t, T>, T>;      \
+    static constexpr bool value = false;                       \
+    constexpr operator bool() const noexcept { return value; } \
+  };                                                           \
+  template <typename T>                                        \
+    requires std::derived_from<T, typename T::TYPEDEF>         \
+  struct is_##TYPEDEF<T> {                                     \
+    static constexpr bool value = true;                        \
     constexpr operator bool() const noexcept { return value; } \
   };                                                           \
   template <typename T>                                        \

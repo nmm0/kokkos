@@ -13,7 +13,6 @@ static_assert(false,
 #define KOKKOS_PARALLEL_HPP
 
 #include <Kokkos_Core_fwd.hpp>
-#include <Kokkos_DetectionIdiom.hpp>
 #include <Kokkos_ExecPolicy.hpp>
 #include <Kokkos_View.hpp>
 
@@ -40,6 +39,12 @@ using execution_space_t = typename T::execution_space;
 template <class T>
 using device_type_t = typename T::device_type;
 
+template <class T>
+concept HasExecutionSpace = requires { typename T::execution_space; };
+
+template <class T>
+concept HasDeviceType = requires { typename T::device_type; };
+
 //----------------------------------------------------------------------------
 /** \brief  Given a Functor and Execution Policy query an execution space.
  *
@@ -48,7 +53,59 @@ using device_type_t = typename T::device_type;
  *  else if  the Functor has a device_type use that for backward compatibility
  *  else     use the default
  */
+template <class Functor, class Policy>
+struct FunctorPolicyExecutionSpace {
+  using execution_space = Kokkos::DefaultExecutionSpace;
+};
 
+template <HasExecutionSpace Functor, HasExecutionSpace Policy>
+struct FunctorPolicyExecutionSpace<Functor, Policy> {
+  static_assert(
+      std::same_as<typename Policy::execution_space,
+                   typename Functor::execution_space>,
+      "A policy with an execution space and a functor with an execution space "
+      "are given but the execution space types do not match!");
+  using execution_space = typename Policy::execution_space;
+};
+
+template <HasDeviceType Functor, HasExecutionSpace Policy>
+struct FunctorPolicyExecutionSpace<Functor, Policy> {
+  static_assert(std::same_as<typename Policy::execution_space,
+                             typename Functor::device_type>,
+                "A policy with an execution space and a functor with a device "
+                "type are given but the execution space types do not match!");
+  using execution_space = typename Policy::execution_space;
+};
+
+template <class Functor, HasExecutionSpace Policy>
+  requires (!HasExecutionSpace<Functor> && !HasDeviceType<Functor>)
+struct FunctorPolicyExecutionSpace<Functor, Policy> {
+  using execution_space = typename Policy::execution_space;
+};
+
+template <class Functor, class Policy>
+  requires (HasExecutionSpace<Functor> && HasDeviceType<Functor> && !HasExecutionSpace<Policy>)
+struct FunctorPolicyExecutionSpace<Functor, Policy> {
+  static_assert(std::same_as<typename Functor::device_type::execution_space,
+                             typename Functor::execution_space>,
+                "A functor with both an execution space and device type is "
+                "given but their execution space types do not match!");
+  using execution_space = typename Functor::execution_space;
+};
+
+template <HasExecutionSpace Functor, class Policy>
+  requires (!HasDeviceType<Functor> && !HasExecutionSpace<Policy>)
+struct FunctorPolicyExecutionSpace<Functor, Policy> {
+  using execution_space = typename Functor::execution_space;
+};
+
+template <HasDeviceType Functor, class Policy>
+  requires (!HasExecutionSpace<Functor> && !HasExecutionSpace<Policy>)
+struct FunctorPolicyExecutionSpace<Functor, Policy> {
+  using execution_space = typename Functor::device_type::execution_space;
+};
+
+#if 0
 template <class Functor, class Policy>
 struct FunctorPolicyExecutionSpace {
   using policy_execution_space  = detected_t<execution_space_t, Policy>;
@@ -85,6 +142,7 @@ struct FunctorPolicyExecutionSpace {
           execution_space_t, Functor>,
       execution_space_t, Policy>;
 };
+#endif
 
 }  // namespace Impl
 }  // namespace Kokkos
